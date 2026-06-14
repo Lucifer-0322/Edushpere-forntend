@@ -28,13 +28,12 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Welcome, <span id="teacherWelcomeName" class="text-teal-600">Instructor</span>!</h1>
-                <p class="text-slate-500 text-sm mt-1">Manage educational materials and analyze student learning deficiencies[cite: 158].</p>
+                <p class="text-slate-500 text-sm mt-1">Manage educational materials and analyze student learning deficiencies.</p>
             </div>
-            
             <div class="flex flex-wrap gap-3">
                 <a href="07_Teacher-analytics.html" class="border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm px-4 py-2.5 rounded-lg shadow-xs transition">View Analytics</a>
                 <a href="05_Quiz-Creator.html" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm px-4 py-2.5 rounded-lg shadow-xs transition">Build New Quiz</a>
@@ -42,17 +41,19 @@
             </div>
         </div>
 
+        <!-- Stats Cards (dynamic) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <p class="text-sm font-medium text-slate-500">Active Courses Hosted</p>
-                <h3 class="text-3xl font-bold text-slate-900 mt-1">1</h3>
+                <h3 class="text-3xl font-bold text-slate-900 mt-1" id="totalCourses">—</h3>
             </div>
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <p class="text-sm font-medium text-slate-500">Assessments Configured</p>
-                <h3 class="text-3xl font-bold text-slate-900 mt-1">4</h3>
+                <h3 class="text-3xl font-bold text-slate-900 mt-1" id="totalQuizzes">—</h3>
             </div>
         </div>
 
+        <!-- Courses Table (dynamic) -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
             <h2 class="text-lg font-bold mb-4 text-slate-900">My Published Classrooms</h2>
             <div class="overflow-x-auto">
@@ -65,14 +66,9 @@
                             <th class="py-3 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm">
+                    <tbody id="coursesTableBody" class="divide-y divide-slate-100 text-sm">
                         <tr>
-                            <td class="py-4 px-4 font-semibold text-slate-900">Introduction to Web Technologies</td>
-                            <td class="py-4 px-4 text-slate-600">48 Students</td>
-                            <td class="py-4 px-4 text-slate-600">2 Quizzes</td>
-                            <td class="py-4 px-4 text-right">
-                                <a href="10_Course-detail.html?id=1" class="text-teal-600 hover:text-teal-700 font-medium transition">Manage &rarr;</a>
-                            </td>
+                            <td colspan="4" class="py-4 px-4 text-slate-400 text-sm">Loading courses...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -81,16 +77,67 @@
     </main>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // Retrieve the user profile string stored during successful login
-            const savedName = localStorage.getItem("userName");
-            const nameHeader = document.getElementById("teacherWelcomeName");
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
 
-            if (savedName && nameHeader) {
-                // Safely update the placeholder with the explicit instructor name
-                nameHeader.innerText = savedName;
+        document.addEventListener("DOMContentLoaded", () => {
+            // Set teacher name from localStorage
+            const savedName = localStorage.getItem("userName");
+            if (savedName) {
+                document.getElementById("teacherWelcomeName").innerText = savedName;
             }
+
+            loadDashboard();
         });
+
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${BASE}/api/courses`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const courses = await res.json();
+
+                if (!res.ok || !Array.isArray(courses)) {
+                    document.getElementById("coursesTableBody").innerHTML =
+                        '<tr><td colspan="4" class="py-4 px-4 text-red-500 text-sm">Failed to load courses.</td></tr>';
+                    return;
+                }
+
+                // Update stats
+                document.getElementById("totalCourses").innerText = courses.length;
+
+                // Count total quizzes across all courses
+                const totalQuizzes = courses.reduce((sum, c) => sum + (c._count?.quizzes || c.quizzes?.length || 0), 0);
+                document.getElementById("totalQuizzes").innerText = totalQuizzes;
+
+                // Render courses table
+                if (courses.length === 0) {
+                    document.getElementById("coursesTableBody").innerHTML =
+                        '<tr><td colspan="4" class="py-4 px-4 text-slate-400 text-sm">No courses published yet.</td></tr>';
+                    return;
+                }
+
+                document.getElementById("coursesTableBody").innerHTML = courses.map(course => `
+                    <tr>
+                        <td class="py-4 px-4 font-semibold text-slate-900">${course.title}</td>
+                        <td class="py-4 px-4 text-slate-600">${course._count?.enrollments ?? '—'} Students</td>
+                        <td class="py-4 px-4 text-slate-600">${course._count?.quizzes ?? '—'} Quizzes</td>
+                        <td class="py-4 px-4 text-right">
+                            <a href="10_Course-detail.html?id=${course.id}"
+                               class="text-teal-600 hover:text-teal-700 font-medium transition">
+                               Manage &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error("Dashboard load error:", err);
+                document.getElementById("coursesTableBody").innerHTML =
+                    '<tr><td colspan="4" class="py-4 px-4 text-red-500 text-sm">Cannot connect to server.</td></tr>';
+            }
+        }
     </script>
 </body>
 </html>
