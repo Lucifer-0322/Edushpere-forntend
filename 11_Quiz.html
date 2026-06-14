@@ -23,7 +23,12 @@
     </nav>
 
     <main class="max-w-3xl mx-auto w-full px-4 py-12 flex-1">
-        
+
+        <!-- No Quiz ID Error (shown if ?id= is missing from URL) -->
+        <div id="noIdAlert" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded text-yellow-800 text-sm">
+            ⚠️ No quiz selected. Redirecting to courses...
+        </div>
+
         <div id="errorAlert" class="hidden mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-sm flex items-center gap-2">
             <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -32,11 +37,11 @@
         </div>
 
         <form id="quizForm" class="space-y-6">
-            
+
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <span class="text-xs font-bold text-teal-600 block mb-1">Question 1 of 1</span>
                 <p class="font-semibold text-slate-900 mb-4 text-base">Which HTML5 element is specifically used to define independent, self-contained content layout zones?</p>
-                
+
                 <div class="space-y-2.5">
                     <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
                         <input type="radio" name="question_1" value="div" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
@@ -56,16 +61,26 @@
     </main>
 
     <script>
+        // ✅ FIX: Get quiz ID from URL — no hardcoded fallback
+        const urlParams = new URLSearchParams(window.location.search);
+        const quizId = urlParams.get("id");
+
+        // ✅ FIX: If no ID in URL, show warning and redirect
+        if (!quizId) {
+            document.getElementById("noIdAlert").classList.remove("hidden");
+            document.getElementById("quizForm").classList.add("hidden");
+            setTimeout(() => {
+                window.location.href = "09_Course.html";
+            }, 2000);
+        }
+
         document.getElementById("quizForm").addEventListener("submit", async (event) => {
-            event.preventDefault(); // Halt default browser refresh
+            event.preventDefault();
 
             const errorAlert = document.getElementById("errorAlert");
             const errorMessage = document.getElementById("errorMessage");
             const submitButton = document.getElementById("submitQuizButton");
 
-            // Extract the Quiz ID dynamically from the URL parameters (?id=101)
-            const urlParams = new URLSearchParams(window.location.search);
-            const quizId = urlParams.get("id") || "101"; 
             const SUBMIT_API_URL = `https://edushpere-backend-production.up.railway.app/api/quizzes/${quizId}/submit`;
 
             // Reset state
@@ -73,7 +88,7 @@
             submitButton.disabled = true;
             submitButton.innerText = "Transmitting assessment parameters to server...";
 
-            // Gather chosen input metrics
+            // Gather answers
             const formData = new FormData(event.target);
             const answersPayload = {};
             formData.forEach((value, key) => {
@@ -83,7 +98,6 @@
             try {
                 const token = localStorage.getItem("token");
 
-                // Execute the backend Fetch request
                 const response = await fetch(SUBMIT_API_URL, {
                     method: "POST",
                     headers: {
@@ -99,18 +113,16 @@
                     throw new Error(data.error || "Server rejected assessment submission processing.");
                 }
 
-                // Redirect to result page with data safely attached to the URL string
+                // Redirect to result page
                 window.location.href = `12_Result.html?score=${data.score}&total=${data.totalMarks || 1}`;
 
             } catch (err) {
                 errorMessage.innerText = err.message;
                 errorAlert.classList.remove("hidden");
-                
-                // Re-enable interactive elements for subsequent retries
                 submitButton.disabled = false;
                 submitButton.innerText = "Submit Assessment for Grading";
             }
-        }); // <-- Fixed: Both functions are now cleanly closed here!
+        });
     </script>
 </body>
 </html>
