@@ -119,63 +119,50 @@
     </div>
 
     <script>
-        // Update this variable target address once the Node.js API runs on live hosting (Railway)
-       const BACKEND_API_URL = "https://edushpere-backend-production.up.railway.app/api/auth/login";
+    const REGISTRATION_API_URL = "https://edushpere-backend-production.up.railway.app/api/auth/register";
 
-        document.getElementById("registerForm").addEventListener("submit", async (event) => {
-            event.preventDefault(); // Halt default document browser refresh page events
+    document.getElementById("registerForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-            // Target DOM nodes configurations
-            const name = document.getElementById("regName").value;
-            const email = document.getElementById("regEmail").value;
-            const role = document.getElementById("regRole").value;
-            const password = document.getElementById("regPassword").value;
-            
-            const errorAlert = document.getElementById("errorAlert");
-            const successAlert = document.getElementById("successAlert");
-            const submitButton = document.getElementById("submitButton");
+        const name     = document.getElementById("regName").value;
+        const email    = document.getElementById("regEmail").value;
+        const role     = document.getElementById("regRole").value;
+        const password = document.getElementById("regPassword").value;
 
-            // Reset execution status views
-            errorAlert.classList.add("hidden");
-            successAlert.classList.add("hidden");
-            submitButton.disabled = true;
-            submitButton.innerText = "Processing Profile Creation...";
+        const errorAlert   = document.getElementById("errorAlert");
+        const successAlert = document.getElementById("successAlert");
+        const submitButton = document.getElementById("submitButton");
 
-            try {
-                // Execute standard AJAX pipeline via browser Native Fetch API to target POST API endpoint
-                const response = await fetch(REGISTRATION_API_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ name, email, role, password }) // Packaging all 4 schema fields cleanly
-                });
+        errorAlert.classList.add("hidden");
+        successAlert.classList.add("hidden");
+        submitButton.disabled = true;
+        submitButton.innerText = "Processing...";
 
-                const data = await response.json();
+        try {
+            const response = await fetch(REGISTRATION_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, role, password })
+            });
 
-                // Intercept any non-200 transaction logs thrown back by Express
-                if (!response.ok) {
-                    throw new Error(data.error || "Profile validation mapping parameters rejected by system.");
-                }
+            const data = await response.json();
 
-                // Expose success indicator block on screen
-                successAlert.classList.remove("hidden");
-
-                // Execute redirection delay to smoothly present positive confirmation state to the user
-                setTimeout(() => {
-                    window.location.href = "01_login.html";
-                }, 1800);
-
-            } catch (err) {
-                // Render exceptions to the user interface dynamically
-                document.getElementById("errorMessage").innerText = err.message;
-                errorAlert.classList.remove("hidden");
-                
-                // Re-enable form fields for editing
-                submitButton.disabled = false;
-                submitButton.innerText = "Register Account";
+            if (!response.ok) {
+                throw new Error(data.error || "Registration failed.");
             }
-        });
-    </script>
+
+            successAlert.classList.remove("hidden");
+            setTimeout(() => {
+                window.location.href = "01_login.html";
+            }, 1800);
+
+        } catch (err) {
+            document.getElementById("errorMessage").innerText = err.message;
+            errorAlert.classList.remove("hidden");
+            submitButton.disabled = false;
+            submitButton.innerText = "Register Account";
+        }
+    });
+</script>
 </body>
 </html>
