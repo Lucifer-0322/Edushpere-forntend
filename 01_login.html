@@ -139,11 +139,11 @@
 
                 // ROLE-BASED ACCESS CONTROL REDIRECTS WITH JS REDIRECTS
                 if (data.role === "STUDENT") {
-                    window.location.href = "dashboard.html";
+                    window.location.href = "03_Student-Dashboard.html";
                 } else if (data.role === "TEACHER") {
-                    window.location.href = "teacher-dashboard.html";
+                    window.location.href = "04_Teacher-Dashboard.html";
                 } else if (data.role === "ADMIN") {
-                    window.location.href = "admin-dashboard.html";
+                    window.location.href = "08_Admin-Dashboard.html";
                 } else {
                     throw new Error("System Identity profiles could not verify target destination.");
                 }
