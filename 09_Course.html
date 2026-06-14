@@ -15,18 +15,76 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="catalogContainer">
-            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between">
-                <div class="p-6">
-                    <span class="text-xs bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider">Computer Science</span>
-                    <h3 class="text-xl font-bold text-slate-900 mt-3 mb-2">Introduction to Web Technologies</h3>
-                    <p class="text-slate-600 text-sm line-clamp-3">Master structural HTML5 templates, style matching via custom layout workflows, and modern responsive designs.</p>
-                </div>
-                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                    <span class="text-xs text-slate-500 font-medium">Instructor: Ma'am Hina H.</span>
-                    <a href="10_Course-detail.html?id=1" class="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded transition">Open Course</a>
-                </div>
-            </div>
+            <p class="text-sm text-slate-400">Loading courses...</p>
         </div>
     </main>
+
+    <script>
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
+        async function loadCourses() {
+            try {
+                const res = await fetch(`${BASE}/api/courses`, {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                const courses = await res.json();
+                const container = document.getElementById("catalogContainer");
+
+                if (!res.ok) {
+                    container.innerHTML = `
+                        <p class="text-red-500 text-sm">
+                            Error loading courses: ${courses.error}
+                        </p>`;
+                    return;
+                }
+
+                if (courses.length === 0) {
+                    container.innerHTML = `
+                        <p class="text-slate-400 text-sm">
+                            No courses available yet.
+                        </p>`;
+                    return;
+                }
+
+                container.innerHTML = courses.map(course => `
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between">
+                        <div class="p-6">
+                            <span class="text-xs bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider">
+                                Computer Science
+                            </span>
+                            <h3 class="text-xl font-bold text-slate-900 mt-3 mb-2">
+                                ${course.title}
+                            </h3>
+                            <p class="text-slate-600 text-sm line-clamp-3">
+                                ${course.description}
+                            </p>
+                        </div>
+                        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <span class="text-xs text-slate-500 font-medium">
+                                Instructor: ${course.teacher ? course.teacher.name : "Unknown"}
+                            </span>
+                            <a href="10_Course-detail.html?id=${course.id}"
+                               class="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded transition">
+                               Open Course
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Error loading courses:", err);
+                document.getElementById("catalogContainer").innerHTML = `
+                    <p class="text-red-500 text-sm">
+                        Cannot connect to server. Please try again.
+                    </p>`;
+            }
+        }
+
+        loadCourses();
+    </script>
 </body>
 </html>
