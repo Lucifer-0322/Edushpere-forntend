@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Account Registration</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <div class="inline-flex items-center justify-center p-3 bg-teal-600 rounded-xl text-white shadow-md mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+            </svg>
+        </div>
+        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create Account</h2>
+        <p class="mt-2 text-sm text-slate-600">Join the EduSphere AI Platform</p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-100">
+            
+            <div id="errorAlert" class="hidden mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-sm flex items-center gap-2">
+                <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="errorMessage">Registration configuration error encountered.</span>
+            </div>
+
+            <div id="successAlert" class="hidden mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 rounded text-emerald-700 text-sm flex items-center gap-2">
+                <svg class="w-5 h-5 flex-shrink-0 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Profile created successfully! Routing to sign-in panel...</span>
+            </div>
+            
+            <form id="registerForm" class="space-y-5">
+                
+                <div>
+                    <label for="regName" class="block text-sm font-medium text-slate-700">Full Name</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <input id="regName" type="text" required class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm" placeholder="Ali Raza">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="regEmail" class="block text-sm font-medium text-slate-700">Email address</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <input id="regEmail" type="email" required class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm" placeholder="name@university.edu">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="regRole" class="block text-sm font-medium text-slate-700">I am joining as a...</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <select id="regRole" required class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm bg-white text-slate-700">
+                            <option value="STUDENT">Student</option>
+                            <option value="TEACHER">Teacher</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="regPassword" class="block text-sm font-medium text-slate-700">Password</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        </div>
+                        <input id="regPassword" type="password" required class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded cursor-pointer">
+                    <label for="terms" class="ml-2 block text-sm text-slate-900 cursor-pointer">
+                        I agree to the institutional academic terms
+                    </label>
+                </div>
+
+                <div>
+                    <button id="submitButton" type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer disabled:opacity-50">
+                        Register Account
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-slate-600">
+                    Already have an account? 
+                    <a href="login.html" class="font-semibold text-teal-600 hover:text-teal-500 transition-colors ml-1">Sign in here</a>
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Update this variable target address once the Node.js API runs on live hosting (Railway)
+       const BACKEND_API_URL = "https://edushpere-backend-production.up.railway.app/api/auth/login";
+
+        document.getElementById("registerForm").addEventListener("submit", async (event) => {
+            event.preventDefault(); // Halt default document browser refresh page events
+
+            // Target DOM nodes configurations
+            const name = document.getElementById("regName").value;
+            const email = document.getElementById("regEmail").value;
+            const role = document.getElementById("regRole").value;
+            const password = document.getElementById("regPassword").value;
+            
+            const errorAlert = document.getElementById("errorAlert");
+            const successAlert = document.getElementById("successAlert");
+            const submitButton = document.getElementById("submitButton");
+
+            // Reset execution status views
+            errorAlert.classList.add("hidden");
+            successAlert.classList.add("hidden");
+            submitButton.disabled = true;
+            submitButton.innerText = "Processing Profile Creation...";
+
+            try {
+                // Execute standard AJAX pipeline via browser Native Fetch API to target POST API endpoint
+                const response = await fetch(REGISTRATION_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ name, email, role, password }) // Packaging all 4 schema fields cleanly
+                });
+
+                const data = await response.json();
+
+                // Intercept any non-200 transaction logs thrown back by Express
+                if (!response.ok) {
+                    throw new Error(data.error || "Profile validation mapping parameters rejected by system.");
+                }
+
+                // Expose success indicator block on screen
+                successAlert.classList.remove("hidden");
+
+                // Execute redirection delay to smoothly present positive confirmation state to the user
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 1800);
+
+            } catch (err) {
+                // Render exceptions to the user interface dynamically
+                document.getElementById("errorMessage").innerText = err.message;
+                errorAlert.classList.remove("hidden");
+                
+                // Re-enable form fields for editing
+                submitButton.disabled = false;
+                submitButton.innerText = "Register Account";
+            }
+        });
+    </script>
+</body>
+</html>

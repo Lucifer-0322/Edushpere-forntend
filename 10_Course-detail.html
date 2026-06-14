@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Learning Track</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="js/guard.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="border-b border-slate-200 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <a href="dashboard.html" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Workspace</a>
+                <h1 class="text-3xl font-bold text-slate-900 mt-2" id="courseTitle">Introduction to Web Technologies</h1>
+                <p class="text-sm text-slate-500" id="courseInstructor">Instructor: Ma'am Hina Mahmood</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                    <h2 class="text-lg font-bold mb-4">Course Core Syllabus Materials</h2>
+                    <div class="divide-y divide-slate-100" id="materialsContainer">
+                        <div class="py-4 flex justify-between items-center first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-red-50 text-red-600 rounded">📄</div>
+                                <div>
+                                    <h4 class="font-semibold text-sm text-slate-800">Lesson 1: Semantic Document Structures</h4>
+                                    <p class="text-xs text-slate-400">PDF Guide &bull; Hosted on Cloudinary [cite: 192]</p>
+                                </div>
+                            </div>
+                            <a href="#" class="text-xs font-medium text-teal-600 hover:underline">Download</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs h-fit">
+                <h2 class="text-lg font-bold mb-4">Available Quizzes</h2>
+                <div class="space-y-3" id="quizzesContainer">
+                    <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl flex flex-col gap-3">
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800">Quiz 1: Core Layout Fundamentals</h4>
+                            <p class="text-xs text-slate-400">MCQ Format &bull; Auto Graded [cite: 202]</p>
+                        </div>
+                        <a href="quiz.html?id=101" class="w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2 rounded-lg transition block">Launch Assessment</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

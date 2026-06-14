@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Course Catalog</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="js/guard.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Course Directory</h1>
+            <p class="text-slate-500 text-sm">Browse available modules and access your learning pathways.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="catalogContainer">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden flex flex-col justify-between">
+                <div class="p-6">
+                    <span class="text-xs bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider">Computer Science</span>
+                    <h3 class="text-xl font-bold text-slate-900 mt-3 mb-2">Introduction to Web Technologies</h3>
+                    <p class="text-slate-600 text-sm line-clamp-3">Master structural HTML5 templates, style matching via custom layout workflows, and modern responsive designs.</p>
+                </div>
+                <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-xs text-slate-500 font-medium">Instructor: Ma'am Hina H.</span>
+                    <a href="course-detail.html?id=1" class="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded transition">Open Course</a>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="js/guard.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
+        <div class="flex items-center gap-2 font-bold text-xl tracking-tight">
+            <span class="text-red-600">EduSphere</span><span>Admin</span>
+        </div>
+        <button onclick="handleLogout()" class="text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-md transition cursor-pointer">Log out</button>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">System Administration Dashboard</h1>
+            <p class="text-slate-500 text-sm">Manage user access configurations and global site operations.</p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-6">
+            <h2 class="text-lg font-bold mb-4">Registered System Identities</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-50">
+                            <th class="py-3 px-4">Name</th>
+                            <th class="py-3 px-4">Email Address</th>
+                            <th class="py-3 px-4">Assigned Role</th>
+                            <th class="py-3 px-4 text-right">Status Modifications</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm" id="usersTableBody">
+                        <tr>
+                            <td class="py-4 px-4 font-medium text-slate-900">Ali Raza</td>
+                            <td class="py-4 px-4 text-slate-600">ali.raza@student.edu</td>
+                            <td class="py-4 px-4"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-medium">STUDENT</span></td>
+                            <td class="py-4 px-4 text-right">
+                                <button class="text-red-600 hover:text-red-700 text-xs font-semibold bg-red-50 px-2 py-1 rounded cursor-pointer">Revoke Account</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

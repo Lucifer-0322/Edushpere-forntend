@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Class Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/guard.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <a href="teacher-dashboard.html" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Control Center</a>
+            <h1 class="text-3xl font-bold text-slate-900 mt-2">Class Performance Diagnostics</h1>
+            <p class="text-slate-500 text-sm">Review automated pass metrics and student knowledge gap breakdowns flagged by the Gemini API.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Quiz Score Distribution Trends</h3>
+                <div class="h-64 flex items-center justify-center">
+                    <canvas id="analyticsGraphCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Classroom Weak-Topic Density</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold mb-1">
+                            <span>CSS Grid Layout Logic</span>
+                            <span class="text-red-600">42% Deficit</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div class="bg-red-500 h-full w-[42%]"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const ctx = document.getElementById('analyticsGraphCanvas').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4'],
+                datasets: [{
+                    label: 'Class Score Average (%)',
+                    data: [65, 78, 72, 85],
+                    borderColor: '#0d9488',
+                    tension: 0.2,
+                    fill: false
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    </script>
+</body>
+</html>
