@@ -41,7 +41,6 @@
             </div>
         </div>
 
-        <!-- Stats Cards (dynamic) -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <p class="text-sm font-medium text-slate-500">Active Courses Hosted</p>
@@ -53,7 +52,6 @@
             </div>
         </div>
 
-        <!-- Courses Table (dynamic) -->
         <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
             <h2 class="text-lg font-bold mb-4 text-slate-900">My Published Classrooms</h2>
             <div class="overflow-x-auto">
@@ -81,12 +79,10 @@
         const token = localStorage.getItem("token");
 
         document.addEventListener("DOMContentLoaded", () => {
-            // Set teacher name from localStorage
             const savedName = localStorage.getItem("userName");
             if (savedName) {
                 document.getElementById("teacherWelcomeName").innerText = savedName;
             }
-
             loadDashboard();
         });
 
@@ -96,22 +92,22 @@
                     headers: { "Authorization": "Bearer " + token }
                 });
 
-                const courses = await res.json();
+                const data = await res.json();
 
-                if (!res.ok || !Array.isArray(courses)) {
+                if (!res.ok) {
                     document.getElementById("coursesTableBody").innerHTML =
                         '<tr><td colspan="4" class="py-4 px-4 text-red-500 text-sm">Failed to load courses.</td></tr>';
                     return;
                 }
 
-                // Update stats
+                // ✅ FIX: Handle both array and single object responses
+                const courses = Array.isArray(data) ? data : [data];
+
                 document.getElementById("totalCourses").innerText = courses.length;
 
-                // Count total quizzes across all courses
-                const totalQuizzes = courses.reduce((sum, c) => sum + (c._count?.quizzes || c.quizzes?.length || 0), 0);
+                const totalQuizzes = courses.reduce((sum, c) => sum + (c._count?.quizzes || 0), 0);
                 document.getElementById("totalQuizzes").innerText = totalQuizzes;
 
-                // Render courses table
                 if (courses.length === 0) {
                     document.getElementById("coursesTableBody").innerHTML =
                         '<tr><td colspan="4" class="py-4 px-4 text-slate-400 text-sm">No courses published yet.</td></tr>';
