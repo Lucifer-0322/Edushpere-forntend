@@ -26,7 +26,7 @@
                 <p id="numericScoreDisplay" class="text-sm font-medium text-slate-500 mt-2">Calculating earned score profile...</p>
             </div>
             
-            <a href="dashboard.html" class="inline-block bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
+            <a href="03_Student-Dashboard.html" class="inline-block bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
                 Return to Dashboard
             </a>
         </div>
@@ -54,7 +54,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // 1. Target and parse URL parameters string (e.g., result.html?score=8&total=10)
+            // 1. Target and parse URL parameters string (e.g., 12_Result.html?score=8&total=10)
             const urlParameters = new URLSearchParams(window.location.search);
             const scoreParam = urlParameters.get("score");
             const totalParam = urlParameters.get("total");

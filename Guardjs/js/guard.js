@@ -12,38 +12,38 @@
     const currentPage = window.location.pathname.split("/").pop();
 
     // Whitelist pages that any unauthenticated public visitor can access
-    const publicPages = ["login.html", "register.html", "unauthorized.html"];
+    const publicPages = ["01_login.html", "02_Register.html", "unauthorized.html"];
 
     // 2. Authentication Check: If not logged in and trying to access a private dashboard
     if (!token && !publicPages.includes(currentPage) && currentPage !== "") {
-        window.location.href = "login.html";
+        window.location.href = "01_login.html";
         return;
     }
 
     // 3. Prevent logged-in users from manually navigating back to login/register pages
-    if (token && (currentPage === "login.html" || currentPage === "register.html")) {
+    if (token && (currentPage === "01_login.html" || currentPage === "02_Register.html")) {
         redirectUserToHome(role);
-        return;s
+        return;
     }
 
     // 4. Group your structural pages into restricted security role categories
     const teacherAccessPages = [
-        "teacher-dashboard.html",
-        "create-quiz.html",
-        "upload-material.html",
-        "teacher-analytics.html"
+        "04_Teacher-Dashboard.html",
+        "05_Quiz-Creator.html",
+        "06_Upload-material.html",
+        "07_Teacher-analytics.html"
     ];
 
     const adminAccessPages = [
-        "admin-dashboard.html"
+        "08_Admin-Dashboard.html"
     ];
 
     const studentAccessPages = [
-        "student-dashboard.html",
-        "courses.html",
-        "course-detail.html",
-        "quiz.html",
-        "result.html"
+        "03_Student-Dashboard.html",
+        "09_Course.html",
+        "10_Course-detail.html",
+        "11_Quiz.html",
+        "12_Result.html"
     ];
 
     // 5. Enforce boundaries against Teacher-restricted application files
@@ -75,11 +75,11 @@
  */
 function redirectUserToHome(role) {
     if (role === "TEACHER") {
-        window.location.href = "teacher-dashboard.html";
+        window.location.href = "04_Teacher-Dashboard.html";
     } else if (role === "ADMIN") {
-        window.location.href = "admin-dashboard.html";
+        window.location.href = "08_Admin-Dashboard.html";
     } else {
-        window.location.href = "student-dashboard.html";
+        window.location.href = "03_Student-Dashboard.html";
     }
 }
 
@@ -96,5 +96,5 @@ function handleLogout() {
     console.log("Session token status revoked. Redirecting to sign-in panel.");
     
     // Hard route redirect straight to login portal
-    window.location.href = "login.html";
+    window.location.href = "01_login.html";
 }
