@@ -12,34 +12,139 @@
         <div class="mb-6">
             <a href="04_Teacher-Dashboard.html" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Control Center</a>
             <h1 class="text-3xl font-bold text-slate-900 mt-2">Upload Syllabus Material</h1>
-            <p class="text-sm text-slate-500">Distribute lecture records, notes, and asset reference sheets to your active classes[cite: 201].</p>
+            <p class="text-sm text-slate-500">Distribute lecture records, notes, and reference sheets to your active classes.</p>
+        </div>
+
+        <!-- Success Alert -->
+        <div id="successAlert" class="hidden mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded text-green-800 text-sm">
+            ✅ Material uploaded successfully! Redirecting...
+        </div>
+
+        <!-- Error Alert -->
+        <div id="errorAlert" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-sm">
+            <span id="errorMessage">Something went wrong.</span>
         </div>
 
         <form id="uploadMaterialForm" class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-6">
             <div>
                 <label class="block text-sm font-medium text-slate-700">Display Asset Name</label>
-                <input type="text" required class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm" placeholder="e.g., Lesson 3 Reference Blueprint Guide">
+                <input type="text" id="materialTitle" required
+                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    placeholder="e.g., Lesson 3 Reference Blueprint Guide">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-slate-700">Target Classroom Assignment</label>
-                <select class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white">
-                    <option>Introduction to Web Technologies</option>
+                <select id="courseId" required
+                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="">Loading courses...</option>
                 </select>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Select File Asset (PDF, MP4, JPEG)</label>
-                <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition cursor-pointer relative">
-                    <input type="file" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" id="mediaFileAsset">
-                    <span class="text-3xl block mb-2">📁</span>
-                    <span class="text-sm font-semibold text-slate-700 block">Click here to attach document data</span>
-                    <span class="text-xs text-slate-400 mt-1 block">Maximum upload file capacity: 10MB</span>
-                </div>
+                <label class="block text-sm font-medium text-slate-700">File Type</label>
+                <select id="fileType" required
+                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <option value="pdf">PDF</option>
+                    <option value="video">Video (MP4)</option>
+                    <option value="image">Image (JPEG/PNG)</option>
+                </select>
             </div>
 
-            <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg transition cursor-pointer">Commit File Upload to Cloudinary</button>
+            <div>
+                <label class="block text-sm font-medium text-slate-700">File URL</label>
+                <input type="url" id="fileUrl" required
+                    class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
+                    placeholder="https://example.com/lesson3.pdf">
+                <p class="text-xs text-slate-400 mt-1">Paste a direct link to your file (Google Drive, Cloudinary, Dropbox, etc.)</p>
+            </div>
+
+            <button type="submit" id="submitBtn"
+                class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg transition cursor-pointer disabled:opacity-50">
+                Publish Material to Classroom
+            </button>
         </form>
     </main>
+
+    <script>
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
+        // Load teacher's courses into the dropdown
+        async function loadCourses() {
+            try {
+                const res = await fetch(`${BASE}/api/courses`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const rawCourses = await res.json();
+                const courses = Array.isArray(rawCourses) ? rawCourses : [rawCourses];
+                const select = document.getElementById("courseId");
+
+                if (!courses || courses.length === 0) {
+                    select.innerHTML = '<option value="">No courses found</option>';
+                    return;
+                }
+
+                select.innerHTML = courses.map(c =>
+                    `<option value="${c.id}">${c.title}</option>`
+                ).join('');
+
+            } catch (err) {
+                console.error("Failed to load courses:", err);
+            }
+        }
+
+        loadCourses();
+
+        // Submit material to backend
+        document.getElementById("uploadMaterialForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submitBtn");
+            const errorAlert = document.getElementById("errorAlert");
+            const errorMessage = document.getElementById("errorMessage");
+            const successAlert = document.getElementById("successAlert");
+
+            errorAlert.classList.add("hidden");
+            successAlert.classList.add("hidden");
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Publishing...";
+
+            const payload = {
+                title: document.getElementById("materialTitle").value,
+                fileUrl: document.getElementById("fileUrl").value,
+                fileType: document.getElementById("fileType").value,
+                courseId: document.getElementById("courseId").value
+            };
+
+            try {
+                const res = await fetch(`${BASE}/api/materials`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Failed to upload material.");
+                }
+
+                successAlert.classList.remove("hidden");
+                setTimeout(() => {
+                    window.location.href = "04_Teacher-Dashboard.html";
+                }, 2000);
+
+            } catch (err) {
+                errorMessage.innerText = err.message;
+                errorAlert.classList.remove("hidden");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Publish Material to Classroom";
+            }
+        });
+    </script>
 </body>
 </html>
