@@ -19,11 +19,12 @@
     }
 
     const teacherAccessPages = [
-        "04_Teacher-Dashboard.html",
-        "05_Quiz-Creator.html",
-        "06_Upload-material.html",
-        "07_Teacher-analytics.html"
-    ];
+    "04_Teacher-Dashboard.html",
+    "13_Create-Course.html",
+    "05_Quiz-Creator.html",
+    "06_upload-material.html",
+    "07_teacher-analytics.html"
+];
 
     const adminAccessPages = [
         "08_Admin-Dashboard.html"
