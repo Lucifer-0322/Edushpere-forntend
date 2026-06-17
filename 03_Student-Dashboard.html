@@ -31,7 +31,7 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Welcome back, <span id="studentWelcomeName" class="text-teal-600">Student</span>!</h1>
             <p class="text-slate-500 text-sm mt-1">Track your dynamic learning loop, review course syllabi, and fulfill assignments here.</p>
@@ -46,10 +46,10 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-500">Enrolled Courses</p>
-                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5">1</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="enrolledCount">0</h3>
                 </div>
             </div>
-            
+
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs flex items-center gap-4">
                 <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +58,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-500">Quizzes Completed</p>
-                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5">1</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="quizzesCompletedCount">0</h3>
                 </div>
             </div>
 
@@ -70,7 +70,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-medium text-slate-500">Average Performance</p>
-                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5">80%</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 mt-0.5" id="avgPerformance">--%</h3>
                 </div>
             </div>
         </div>
@@ -79,15 +79,7 @@
             <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-slate-900">Active Classrooms</h2>
                 <div class="space-y-4" id="coursesContainer">
-                    <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl flex justify-between items-center hover:border-teal-500 transition">
-                        <div>
-                            <h4 class="font-bold text-slate-800">Introduction to Web Technologies</h4>
-                            <p class="text-xs text-slate-400 mt-0.5">Instructor: Ma'am Hina Mahmood</p>
-                        </div>
-                        <a href="10_Course-detail.html?id=1" class="text-sm font-semibold text-teal-600 hover:text-teal-700 transition">
-                            View Course &rarr;
-                        </a>
-                    </div>
+                    <p class="text-sm text-slate-400">Loading courses...</p>
                 </div>
             </div>
 
@@ -97,29 +89,67 @@
                     <h2 class="text-lg font-bold text-teal-900 tracking-tight">AI Diagnostics</h2>
                 </div>
                 <p class="text-xs text-teal-700 mb-4 leading-relaxed">Real-time adaptive learning recommendations parsed via Google Gemini API.</p>
-                
+
                 <div class="space-y-3" id="aiRecommendationsPanel">
-                    <div class="bg-white p-4 rounded-xl border border-teal-100 shadow-xs">
-                        <span class="text-[10px] font-bold text-amber-600 tracking-wider uppercase block mb-1">Target Weak Topic</span>
-                        <h4 class="font-bold text-slate-800 text-sm mb-1">CSS Flexbox Layouts</h4>
-                        <p class="text-xs text-slate-500 leading-relaxed">Your scores dropped in container nesting vectors during the layout fundamentals quiz. We recommend checking out the lesson 2 guidelines.</p>
-                    </div>
+                    <p class="text-xs text-slate-400">No recommendations yet. Complete a quiz to get personalized study tips.</p>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
         document.addEventListener("DOMContentLoaded", () => {
-            // Retrieve identity profile string saved during the secure login phase
             const savedName = localStorage.getItem("userName");
             const nameContainer = document.getElementById("studentWelcomeName");
-
             if (savedName && nameContainer) {
-                // Safely sanitize and inject the string into the welcoming layout template
                 nameContainer.innerText = savedName;
             }
+            loadDashboardData();
         });
+
+        async function loadDashboardData() {
+            try {
+                const res = await fetch(`${BASE}/api/courses`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const courses = await res.json();
+                const container = document.getElementById("coursesContainer");
+
+                if (!res.ok) {
+                    container.innerHTML = `<p class="text-red-500 text-sm">Error: ${courses.error}</p>`;
+                    return;
+                }
+
+                if (!courses || courses.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-slate-400">No courses available yet.</p>';
+                    document.getElementById("enrolledCount").innerText = "0";
+                    return;
+                }
+
+                document.getElementById("enrolledCount").innerText = courses.length;
+
+                container.innerHTML = courses.map(course => `
+                    <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl flex justify-between items-center hover:border-teal-500 transition">
+                        <div>
+                            <h4 class="font-bold text-slate-800">${course.title}</h4>
+                            <p class="text-xs text-slate-400 mt-0.5">Instructor: ${course.teacher ? course.teacher.name : "Unknown"}</p>
+                        </div>
+                        <a href="10_Course-detail.html?id=${course.id}" class="text-sm font-semibold text-teal-600 hover:text-teal-700 transition">
+                            View Course &rarr;
+                        </a>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Error loading dashboard:", err);
+                document.getElementById("coursesContainer").innerHTML =
+                    '<p class="text-sm text-red-500">Cannot connect to server.</p>';
+            }
+        }
     </script>
 </body>
 </html>
