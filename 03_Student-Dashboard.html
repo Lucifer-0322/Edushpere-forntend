@@ -108,6 +108,8 @@
                 nameContainer.innerText = savedName;
             }
             loadDashboardData();
+            loadQuizStats();
+            loadAiInsights();
         });
 
         async function loadDashboardData() {
@@ -116,11 +118,12 @@
                     headers: { "Authorization": "Bearer " + token }
                 });
 
-                const courses = await res.json();
+                const rawCourses = await res.json();
+                const courses = Array.isArray(rawCourses) ? rawCourses : [rawCourses];
                 const container = document.getElementById("coursesContainer");
 
                 if (!res.ok) {
-                    container.innerHTML = `<p class="text-red-500 text-sm">Error: ${courses.error}</p>`;
+                    container.innerHTML = `<p class="text-red-500 text-sm">Error loading courses.</p>`;
                     return;
                 }
 
@@ -148,6 +151,51 @@
                 console.error("Error loading dashboard:", err);
                 document.getElementById("coursesContainer").innerHTML =
                     '<p class="text-sm text-red-500">Cannot connect to server.</p>';
+            }
+        }
+
+        async function loadQuizStats() {
+            try {
+                const res = await fetch(`${BASE}/api/insights/stats`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const stats = await res.json();
+
+                if (!res.ok) return;
+
+                document.getElementById("quizzesCompletedCount").innerText = stats.totalAttempts;
+                document.getElementById("avgPerformance").innerText =
+                    stats.totalAttempts > 0 ? `${stats.averagePercentage}%` : "--%";
+
+            } catch (err) {
+                console.error("Error loading quiz stats:", err);
+            }
+        }
+
+        async function loadAiInsights() {
+            try {
+                const res = await fetch(`${BASE}/api/insights`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const insights = await res.json();
+                const panel = document.getElementById("aiRecommendationsPanel");
+
+                if (!res.ok || !Array.isArray(insights) || insights.length === 0) {
+                    panel.innerHTML = '<p class="text-xs text-slate-400">No recommendations yet. Complete a quiz to get personalized study tips.</p>';
+                    return;
+                }
+
+                panel.innerHTML = insights.map(insight => `
+                    <div class="bg-white p-4 rounded-lg border border-teal-100 shadow-xs">
+                        <p class="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">${insight.weakTopic}</p>
+                        <p class="text-xs text-slate-600 leading-relaxed">${insight.recommendation}</p>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error("Error loading AI insights:", err);
             }
         }
     </script>
