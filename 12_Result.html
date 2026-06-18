@@ -16,22 +16,23 @@
 <body class="bg-slate-50 text-slate-800">
 
     <main class="max-w-3xl mx-auto px-4 py-12">
-        
+
         <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden p-8 mb-8 text-center">
             <h1 class="text-3xl font-extrabold text-slate-900 mb-2">Assessment Summary</h1>
             <p class="text-slate-500 text-sm">Quiz Performance Evaluation Completed</p>
-            
+
             <div class="my-8">
                 <span id="percentageDisplay" class="text-6xl font-black text-teal-600">--%</span>
                 <p id="numericScoreDisplay" class="text-sm font-medium text-slate-500 mt-2">Calculating earned score profile...</p>
             </div>
-            
+
             <a href="03_Student-Dashboard.html" class="inline-block bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
                 Return to Dashboard
             </a>
         </div>
 
-        <div class="bg-teal-600 text-white rounded-2xl shadow-md p-8">
+        <!-- AI Panel — only shown if real AI insight exists -->
+        <div id="aiPanel" class="hidden bg-teal-600 text-white rounded-2xl shadow-md p-8">
             <div class="flex items-center gap-2 mb-4">
                 <span class="text-xl">✨</span>
                 <h2 class="text-xl font-bold tracking-tight">Gemini AI Target Diagnostics</h2>
@@ -39,55 +40,89 @@
             <p class="text-teal-100 text-sm mb-6 leading-relaxed">
                 The Google Gemini API has processed your metrics to map knowledge gaps and structure your next learning steps.
             </p>
-            
+
             <div class="space-y-4 text-slate-900">
                 <div class="bg-white p-5 rounded-xl shadow-xs">
-                    <h4 class="font-bold text-red-600 text-sm uppercase tracking-wider mb-1">Identified Vulnerability</h4>
-                    <p class="font-bold text-slate-800 mb-2">Syllabus Area Evaluation</p>
-                    <p class="text-sm text-slate-600 leading-relaxed">
-                        Complete additional module assessments to expand your personalized AI recommendation loop history.
-                    </p>
+                    <h4 class="font-bold text-red-600 text-sm uppercase tracking-wider mb-1">Identified Weak Topic</h4>
+                    <p class="font-bold text-slate-800 mb-2" id="aiWeakTopic">—</p>
+                    <p class="text-sm text-slate-600 leading-relaxed" id="aiRecommendation">—</p>
                 </div>
             </div>
         </div>
+
+        <!-- Shown instead of AI panel when student got everything correct -->
+        <div id="perfectScorePanel" class="hidden bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+            <span class="text-3xl block mb-2">🎉</span>
+            <h3 class="font-bold text-green-800 text-lg">Perfect Score!</h3>
+            <p class="text-sm text-green-700 mt-1">No weak areas detected. Great job!</p>
+        </div>
+
     </main>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // 1. Target and parse URL parameters string (e.g., 12_Result.html?score=8&total=10)
             const urlParameters = new URLSearchParams(window.location.search);
             const scoreParam = urlParameters.get("score");
             const totalParam = urlParameters.get("total");
 
-            // Capture target UI layout nodes
             const percentageDisplay = document.getElementById("percentageDisplay");
             const numericScoreDisplay = document.getElementById("numericScoreDisplay");
 
-            // 2. Validate extracted parameters before processing mathematical computations
             if (scoreParam !== null && totalParam !== null) {
                 const numericScore = parseFloat(scoreParam);
                 const numericTotal = parseFloat(totalParam);
 
                 if (!isNaN(numericScore) && !isNaN(numericTotal) && numericTotal > 0) {
-                    // Compute true percentage mathematical mapping
                     const computedPercentage = Math.round((numericScore / numericTotal) * 100);
 
-                    // 3. Inject calculated data changes directly into the layout view layers
                     percentageDisplay.innerText = `${computedPercentage}%`;
                     numericScoreDisplay.innerText = `You answered ${numericScore} out of ${numericTotal} questions correctly.`;
-                    
-                    // Optional styling alteration based on failure/success profiles
+
                     if (computedPercentage < 50) {
                         percentageDisplay.classList.replace("text-teal-600", "text-red-500");
                     }
+
+                    renderAiInsight(numericScore, numericTotal);
                     return;
                 }
             }
 
-            // Fallback UI response layout state adjustments if inputs fail verification check
             percentageDisplay.innerText = "N/A";
             numericScoreDisplay.innerText = "No active assessment performance records detected.";
         });
+
+        function renderAiInsight(score, total) {
+            const aiPanel = document.getElementById("aiPanel");
+            const perfectScorePanel = document.getElementById("perfectScorePanel");
+
+            // Perfect score — no AI insight was generated by backend
+            if (score === total) {
+                perfectScorePanel.classList.remove("hidden");
+                return;
+            }
+
+            const rawInsight = sessionStorage.getItem("lastAiInsight");
+
+            if (!rawInsight) {
+                // No insight available (e.g. Gemini failed silently, or page was reloaded)
+                return;
+            }
+
+            try {
+                const insight = JSON.parse(rawInsight);
+
+                document.getElementById("aiWeakTopic").innerText = insight.weakTopic || "General Review Needed";
+                document.getElementById("aiRecommendation").innerText = insight.recommendation || "Review the course material for this topic.";
+
+                aiPanel.classList.remove("hidden");
+
+                // Clear it so a page refresh doesn't show stale data from a previous quiz
+                sessionStorage.removeItem("lastAiInsight");
+
+            } catch (err) {
+                console.error("Failed to parse AI insight:", err);
+            }
+        }
     </script>
 </body>
 </html>

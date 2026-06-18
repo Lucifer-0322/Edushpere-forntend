@@ -29,11 +29,20 @@
         </div>
 
         <div id="errorAlert" class="hidden mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-sm flex items-center gap-2">
-            <span id="errorMessage">Failed to load assessment.</span>
+            <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span id="errorMessage">Failed to commit assessment data stack.</span>
         </div>
 
         <form id="quizForm" class="space-y-6">
-            <p class="text-sm text-slate-400">Loading questions...</p>
+            <div id="questionsContainer" class="space-y-6">
+                <p class="text-sm text-slate-400">Loading questions...</p>
+            </div>
+
+            <button id="submitQuizButton" type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50">
+                Submit Assessment for Grading
+            </button>
         </form>
     </main>
 
@@ -47,36 +56,38 @@
         if (!quizId) {
             document.getElementById("noIdAlert").classList.remove("hidden");
             document.getElementById("quizForm").classList.add("hidden");
-            setTimeout(() => { window.location.href = "09_Course.html"; }, 2000);
+            setTimeout(() => {
+                window.location.href = "09_Course.html";
+            }, 2000);
+        } else {
+            loadQuiz();
         }
 
-        // Load the real quiz questions from the backend
         async function loadQuiz() {
             try {
                 const res = await fetch(`${BASE}/api/quizzes/${quizId}`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
 
-                const data = await res.json();
-                const form = document.getElementById("quizForm");
+                const quiz = await res.json();
 
                 if (!res.ok) {
-                    form.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm">${data.error || "Quiz not found."}</div>`;
+                    throw new Error(quiz.error || "Quiz not found.");
+                }
+
+                document.getElementById("quizHeaderTitle").innerText = `Assessment Window: ${quiz.title}`;
+
+                const container = document.getElementById("questionsContainer");
+
+                if (!quiz.questions || quiz.questions.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-slate-400">No questions found for this quiz.</p>';
+                    document.getElementById("submitQuizButton").disabled = true;
                     return;
                 }
 
-                document.getElementById("quizHeaderTitle").innerText = "Assessment: " + data.title;
-
-                if (!data.questions || data.questions.length === 0) {
-                    form.innerHTML = '<p class="text-sm text-slate-400">This quiz has no questions yet.</p>';
-                    return;
-                }
-
-                form.innerHTML = data.questions.map((q, index) => `
+                container.innerHTML = quiz.questions.map((q, index) => `
                     <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-                        <span class="text-xs font-bold text-teal-600 block mb-1">
-                            Question ${index + 1} of ${data.questions.length}
-                        </span>
+                        <span class="text-xs font-bold text-teal-600 block mb-1">Question ${index + 1} of ${quiz.questions.length}</span>
                         <p class="font-semibold text-slate-900 mb-4 text-base">${q.questionText}</p>
                         <div class="space-y-2.5">
                             <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
@@ -97,20 +108,15 @@
                             </label>
                         </div>
                     </div>
-                `).join('') + `
-                    <button id="submitQuizButton" type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50">
-                        Submit Assessment for Grading
-                    </button>
-                `;
+                `).join('');
 
             } catch (err) {
-                console.error("Error loading quiz:", err);
-                document.getElementById("quizForm").innerHTML =
-                    '<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm">Cannot connect to server.</div>';
+                console.error("Load Quiz Error:", err);
+                document.getElementById("questionsContainer").innerHTML =
+                    `<p class="text-sm text-red-500">${err.message}</p>`;
+                document.getElementById("submitQuizButton").disabled = true;
             }
         }
-
-        if (quizId) loadQuiz();
 
         document.getElementById("quizForm").addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -123,11 +129,13 @@
 
             errorAlert.classList.add("hidden");
             submitButton.disabled = true;
-            submitButton.innerText = "Submitting...";
+            submitButton.innerText = "Transmitting assessment parameters to server...";
 
             const formData = new FormData(event.target);
             const answersPayload = {};
-            formData.forEach((value, key) => { answersPayload[key] = value; });
+            formData.forEach((value, key) => {
+                answersPayload[key] = value;
+            });
 
             try {
                 const response = await fetch(SUBMIT_API_URL, {
@@ -142,7 +150,14 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || "Server rejected submission.");
+                    throw new Error(data.error || "Server rejected assessment submission processing.");
+                }
+
+                // Save AI insight to sessionStorage so result page can display it
+                if (data.aiInsight) {
+                    sessionStorage.setItem("lastAiInsight", JSON.stringify(data.aiInsight));
+                } else {
+                    sessionStorage.removeItem("lastAiInsight");
                 }
 
                 window.location.href = `12_Result.html?score=${data.score}&total=${data.totalMarks || 1}`;
