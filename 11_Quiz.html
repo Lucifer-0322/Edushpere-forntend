@@ -16,7 +16,7 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 
     <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
-        <span class="font-bold text-slate-900 text-sm" id="quizHeaderTitle">Assessment Window: Quiz 1</span>
+        <span class="font-bold text-slate-900 text-sm" id="quizHeaderTitle">Loading Assessment...</span>
         <span class="text-xs bg-red-50 text-red-700 border border-red-200 font-bold px-3 py-1.5 rounded-md uppercase tracking-wider">
             Active Test Environment
         </span>
@@ -24,55 +24,93 @@
 
     <main class="max-w-3xl mx-auto w-full px-4 py-12 flex-1">
 
-        <!-- No Quiz ID Error (shown if ?id= is missing from URL) -->
         <div id="noIdAlert" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded text-yellow-800 text-sm">
             ⚠️ No quiz selected. Redirecting to courses...
         </div>
 
         <div id="errorAlert" class="hidden mb-6 p-3 bg-red-50 border-l-4 border-red-500 rounded text-red-700 text-sm flex items-center gap-2">
-            <svg class="w-5 h-5 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span id="errorMessage">Failed to commit assessment data stack.</span>
+            <span id="errorMessage">Failed to load assessment.</span>
         </div>
 
         <form id="quizForm" class="space-y-6">
-
-            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-                <span class="text-xs font-bold text-teal-600 block mb-1">Question 1 of 1</span>
-                <p class="font-semibold text-slate-900 mb-4 text-base">Which HTML5 element is specifically used to define independent, self-contained content layout zones?</p>
-
-                <div class="space-y-2.5">
-                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
-                        <input type="radio" name="question_1" value="div" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
-                        <span class="text-sm font-medium text-slate-700">&lt;div&gt;</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
-                        <input type="radio" name="question_1" value="article" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
-                        <span class="text-sm font-medium text-slate-700">&lt;article&gt;</span>
-                    </label>
-                </div>
-            </div>
-
-            <button id="submitQuizButton" type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50">
-                Submit Assessment for Grading
-            </button>
+            <p class="text-sm text-slate-400">Loading questions...</p>
         </form>
     </main>
 
     <script>
-        // ✅ FIX: Get quiz ID from URL — no hardcoded fallback
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
         const urlParams = new URLSearchParams(window.location.search);
         const quizId = urlParams.get("id");
 
-        // ✅ FIX: If no ID in URL, show warning and redirect
         if (!quizId) {
             document.getElementById("noIdAlert").classList.remove("hidden");
             document.getElementById("quizForm").classList.add("hidden");
-            setTimeout(() => {
-                window.location.href = "09_Course.html";
-            }, 2000);
+            setTimeout(() => { window.location.href = "09_Course.html"; }, 2000);
         }
+
+        // Load the real quiz questions from the backend
+        async function loadQuiz() {
+            try {
+                const res = await fetch(`${BASE}/api/quizzes/${quizId}`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const data = await res.json();
+                const form = document.getElementById("quizForm");
+
+                if (!res.ok) {
+                    form.innerHTML = `<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm">${data.error || "Quiz not found."}</div>`;
+                    return;
+                }
+
+                document.getElementById("quizHeaderTitle").innerText = "Assessment: " + data.title;
+
+                if (!data.questions || data.questions.length === 0) {
+                    form.innerHTML = '<p class="text-sm text-slate-400">This quiz has no questions yet.</p>';
+                    return;
+                }
+
+                form.innerHTML = data.questions.map((q, index) => `
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                        <span class="text-xs font-bold text-teal-600 block mb-1">
+                            Question ${index + 1} of ${data.questions.length}
+                        </span>
+                        <p class="font-semibold text-slate-900 mb-4 text-base">${q.questionText}</p>
+                        <div class="space-y-2.5">
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                <input type="radio" name="${q.id}" value="A" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
+                                <span class="text-sm font-medium text-slate-700">${q.optionA}</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                <input type="radio" name="${q.id}" value="B" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
+                                <span class="text-sm font-medium text-slate-700">${q.optionB}</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                <input type="radio" name="${q.id}" value="C" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
+                                <span class="text-sm font-medium text-slate-700">${q.optionC}</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                                <input type="radio" name="${q.id}" value="D" required class="w-4 h-4 text-teal-600 focus:ring-teal-500 border-slate-300">
+                                <span class="text-sm font-medium text-slate-700">${q.optionD}</span>
+                            </label>
+                        </div>
+                    </div>
+                `).join('') + `
+                    <button id="submitQuizButton" type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50">
+                        Submit Assessment for Grading
+                    </button>
+                `;
+
+            } catch (err) {
+                console.error("Error loading quiz:", err);
+                document.getElementById("quizForm").innerHTML =
+                    '<div class="bg-red-50 border-l-4 border-red-500 p-4 rounded text-red-700 text-sm">Cannot connect to server.</div>';
+            }
+        }
+
+        if (quizId) loadQuiz();
 
         document.getElementById("quizForm").addEventListener("submit", async (event) => {
             event.preventDefault();
@@ -81,23 +119,17 @@
             const errorMessage = document.getElementById("errorMessage");
             const submitButton = document.getElementById("submitQuizButton");
 
-            const SUBMIT_API_URL = `https://edushpere-backend-production.up.railway.app/api/quizzes/${quizId}/submit`;
+            const SUBMIT_API_URL = `${BASE}/api/quizzes/${quizId}/submit`;
 
-            // Reset state
             errorAlert.classList.add("hidden");
             submitButton.disabled = true;
-            submitButton.innerText = "Transmitting assessment parameters to server...";
+            submitButton.innerText = "Submitting...";
 
-            // Gather answers
             const formData = new FormData(event.target);
             const answersPayload = {};
-            formData.forEach((value, key) => {
-                answersPayload[key] = value;
-            });
+            formData.forEach((value, key) => { answersPayload[key] = value; });
 
             try {
-                const token = localStorage.getItem("token");
-
                 const response = await fetch(SUBMIT_API_URL, {
                     method: "POST",
                     headers: {
@@ -110,10 +142,9 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || "Server rejected assessment submission processing.");
+                    throw new Error(data.error || "Server rejected submission.");
                 }
 
-                // Redirect to result page
                 window.location.href = `12_Result.html?score=${data.score}&total=${data.totalMarks || 1}`;
 
             } catch (err) {
