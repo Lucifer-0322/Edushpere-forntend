@@ -3,49 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduSphere AI - Admin Panel</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>EduSphere AI - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/guard.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-slate-50 text-slate-800">
-    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-xs">
+
+    <nav class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-2 font-bold text-xl tracking-tight">
-            <span class="text-red-600">EduSphere</span><span>Admin</span>
+            <span class="text-teal-400">EduSphere</span><span>AI</span>
         </div>
-        <button onclick="handleLogout()" class="text-sm font-medium text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-md transition cursor-pointer">Log out</button>
+        <div class="flex items-center gap-4">
+            <span class="text-sm font-medium bg-slate-800 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700">Admin Mode</span>
+            <button onclick="handleLogout()" class="text-sm font-medium text-red-400 hover:text-red-300 bg-slate-800 px-3 py-1.5 rounded-md transition cursor-pointer">
+                Log out
+            </button>
+        </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
         <div class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-900">System Administration Dashboard</h1>
-            <p class="text-slate-500 text-sm">Manage user access configurations and global site operations.</p>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">System Administration</h1>
+            <p class="text-slate-500 text-sm mt-1">Manage platform users, instructors, and content data.</p>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 shadow-xs p-6">
-            <h2 class="text-lg font-bold mb-4">Registered System Identities</h2>
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm mb-8">
+            <h2 class="text-xl font-bold mb-4 text-slate-900">Platform Users (Teachers & Students)</h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="border-b border-slate-200 text-slate-400 text-xs font-semibold uppercase tracking-wider bg-slate-50">
+                        <tr class="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
                             <th class="py-3 px-4">Name</th>
-                            <th class="py-3 px-4">Email Address</th>
-                            <th class="py-3 px-4">Assigned Role</th>
-                            <th class="py-3 px-4 text-right">Status Modifications</th>
+                            <th class="py-3 px-4">Email</th>
+                            <th class="py-3 px-4">Role</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm" id="usersTableBody">
-                        <tr>
-                            <td class="py-4 px-4 font-medium text-slate-900">Ali Raza</td>
-                            <td class="py-4 px-4 text-slate-600">ali.raza@student.edu</td>
-                            <td class="py-4 px-4"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-medium">STUDENT</span></td>
-                            <td class="py-4 px-4 text-right">
-                                <button class="text-red-600 hover:text-red-700 text-xs font-semibold bg-red-50 px-2 py-1 rounded cursor-pointer">Revoke Account</button>
-                            </td>
-                        </tr>
+                    <tbody id="usersTableBody" class="divide-y divide-slate-100 text-sm">
+                        <tr><td colspan="4" class="py-4 px-4 text-slate-400">Loading users...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
+
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-xl font-bold mb-4 text-slate-900">Platform Courses & Content</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider bg-slate-50">
+                            <th class="py-3 px-4">Course Title</th>
+                            <th class="py-3 px-4">Instructor</th>
+                            <th class="py-3 px-4">Quizzes Attached</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesTableBody" class="divide-y divide-slate-100 text-sm">
+                        <tr><td colspan="4" class="py-4 px-4 text-slate-400">Loading courses...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
+
+    <script>
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAllUsers();
+            loadAllCourses();
+        });
+
+        // --- FETCH DATA --- //
+
+        async function loadAllUsers() {
+            try {
+                // Requires a GET /api/users route for Admins
+                const res = await fetch(`${BASE}/api/users`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error);
+
+                const usersHtml = data.map(user => `
+                    <tr id="user-row-${user.id}">
+                        <td class="py-3 px-4 font-medium text-slate-900">${user.name}</td>
+                        <td class="py-3 px-4 text-slate-600">${user.email}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-1 rounded text-xs font-bold 
+                                ${user.role === 'TEACHER' ? 'bg-blue-100 text-blue-700' : 
+                                  user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}">
+                                ${user.role}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-right">
+                            ${user.role !== 'ADMIN' ? `
+                            <button onclick="deleteUser('${user.id}', '${user.name}')" class="text-red-600 hover:text-red-800 font-medium text-sm bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition cursor-pointer">
+                                Remove
+                            </button>
+                            ` : '<span class="text-slate-400 text-xs">Protected</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.getElementById("usersTableBody").innerHTML = usersHtml || '<tr><td colspan="4" class="py-4 px-4 text-center">No users found.</td></tr>';
+            } catch (err) {
+                document.getElementById("usersTableBody").innerHTML = `<tr><td colspan="4" class="text-red-500 py-4 px-4">Error loading users: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function loadAllCourses() {
+            try {
+                // We can reuse the existing GET /api/courses route!
+                const res = await fetch(`${BASE}/api/courses`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error);
+
+                const coursesHtml = data.map(course => `
+                    <tr id="course-row-${course.id}">
+                        <td class="py-3 px-4 font-medium text-slate-900">${course.title}</td>
+                        <td class="py-3 px-4 text-slate-600">${course.teacher?.name || 'Unknown'}</td>
+                        <td class="py-3 px-4 text-slate-600">${course._count?.quizzes || 0} Quizzes</td>
+                        <td class="py-3 px-4 text-right flex justify-end gap-2">
+                            <a href="10_Course-detail.html?id=${course.id}" class="text-teal-600 hover:text-teal-800 font-medium text-sm bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded transition">View Quizzes</a>
+                            <button onclick="deleteCourse('${course.id}', '${course.title.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 font-medium text-sm bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition cursor-pointer">
+                                Delete Course
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.getElementById("coursesTableBody").innerHTML = coursesHtml || '<tr><td colspan="4" class="py-4 px-4 text-center">No courses found.</td></tr>';
+            } catch (err) {
+                document.getElementById("coursesTableBody").innerHTML = `<tr><td colspan="4" class="text-red-500 py-4 px-4">Error loading courses: ${err.message}</td></tr>`;
+            }
+        }
+
+        // --- DELETE FUNCTIONS --- //
+
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Are you sure you want to permanently delete user "${userName}"?`)) return;
+            try {
+                const res = await fetch(`${BASE}/api/users/${userId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (!res.ok) throw new Error("Failed to delete user.");
+                document.getElementById(`user-row-${userId}`).remove();
+                alert(`User ${userName} deleted.`);
+            } catch (err) { alert(err.message); }
+        }
+
+        async function deleteCourse(courseId, courseTitle) {
+            if (!confirm(`Are you sure you want to delete course "${courseTitle}"? This removes all quizzes inside it.`)) return;
+            try {
+                const res = await fetch(`${BASE}/api/courses/${courseId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                document.getElementById(`course-row-${courseId}`).remove();
+                alert(`Course deleted.`);
+            } catch (err) { alert(err.message); }
+        }
+    </script>
 </body>
 </html>
