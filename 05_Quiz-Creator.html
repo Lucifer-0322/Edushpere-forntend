@@ -106,19 +106,27 @@
         const BASE = "https://edushpere-backend-production.up.railway.app";
         const token = localStorage.getItem("token");
 
-        // Load teacher's courses into the dropdown
+        // Keeps the list of courses this teacher actually owns,
+        // fetched fresh from the backend. Used as the source of truth
+        // for the ownership guard below.
+        let myCourses = [];
+
+        // Load teacher's own courses into the dropdown
         async function loadCourses() {
             try {
-                const res = await fetch(`${BASE}/api/courses`, {
+                const res = await fetch(`${BASE}/api/courses/my-courses`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
                 const courses = await res.json();
                 const select = document.getElementById("courseId");
 
-                if (!courses || courses.length === 0) {
+                if (!res.ok || !courses || courses.length === 0) {
                     select.innerHTML = '<option value="">No courses found</option>';
+                    myCourses = [];
                     return;
                 }
+
+                myCourses = courses;
 
                 select.innerHTML = courses.map(c =>
                     `<option value="${c.id}">${c.title}</option>`
@@ -126,10 +134,20 @@
 
             } catch (err) {
                 console.error("Failed to load courses:", err);
+                document.getElementById("courseId").innerHTML =
+                    '<option value="">Failed to load courses</option>';
             }
         }
 
         loadCourses();
+
+        // Guard: confirms the selected courseId is actually one of
+        // THIS teacher's own courses (from myCourses, fetched via
+        // /api/courses/my-courses). Blocks submission if someone
+        // tampers with the dropdown value or it's somehow stale.
+        function isOwnCourse(courseId) {
+            return myCourses.some(c => String(c.id) === String(courseId));
+        }
 
         // Submit quiz to backend
         document.getElementById("createQuizForm").addEventListener("submit", async (e) => {
@@ -142,13 +160,23 @@
 
             errorAlert.classList.add("hidden");
             successAlert.classList.add("hidden");
+
+            const selectedCourseId = document.getElementById("courseId").value;
+
+            // Client-side ownership check before we even hit the network
+            if (!isOwnCourse(selectedCourseId)) {
+                errorMessage.innerText = "You can only publish quizzes to your own courses.";
+                errorAlert.classList.remove("hidden");
+                return;
+            }
+
             submitBtn.disabled = true;
             submitBtn.innerText = "Publishing...";
 
             const payload = {
                 title: document.getElementById("quizTitle").value,
                 topic: document.getElementById("quizTopic").value,
-                courseId: document.getElementById("courseId").value,
+                courseId: selectedCourseId,
                 questions: [
                     {
                         questionText: document.getElementById("questionText").value,
