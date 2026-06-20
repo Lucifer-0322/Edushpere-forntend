@@ -19,44 +19,99 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Quiz Score Distribution Trends</h3>
-                <div class="h-64 flex items-center justify-center">
+                <div class="h-64 flex items-center justify-center relative">
                     <canvas id="analyticsGraphCanvas"></canvas>
+                    <p id="trendEmptyState" class="hidden text-sm text-slate-400 absolute">No quiz attempts yet — the trend will appear once students start submitting.</p>
                 </div>
             </div>
 
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Classroom Weak-Topic Density</h3>
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between text-xs font-semibold mb-1">
-                            <span>CSS Grid Layout Logic</span>
-                            <span class="text-red-600">42% Deficit</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-red-500 h-full w-[42%]"></div>
-                        </div>
-                    </div>
+                <div class="space-y-4" id="weakTopicsContainer">
+                    <p class="text-sm text-slate-400">Loading analytics...</p>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        const ctx = document.getElementById('analyticsGraphCanvas').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4'],
-                datasets: [{
-                    label: 'Class Score Average (%)',
-                    data: [65, 78, 72, 85],
-                    borderColor: '#0d9488',
-                    tension: 0.2,
-                    fill: false
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+
+        let chartInstance = null;
+
+        document.addEventListener("DOMContentLoaded", loadAnalytics);
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch(`${BASE}/api/analytics/teacher`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    document.getElementById("weakTopicsContainer").innerHTML =
+                        `<p class="text-sm text-red-500">${data.error || "Failed to load analytics."}</p>`;
+                    return;
+                }
+
+                renderTrendChart(data.scoreTrend);
+                renderWeakTopics(data.weakTopics);
+
+            } catch (err) {
+                console.error("Analytics load error:", err);
+                document.getElementById("weakTopicsContainer").innerHTML =
+                    '<p class="text-sm text-red-500">Cannot connect to server.</p>';
+            }
+        }
+
+        function renderTrendChart(scoreTrend) {
+            const canvas = document.getElementById('analyticsGraphCanvas');
+
+            if (!scoreTrend || scoreTrend.labels.length === 0) {
+                canvas.classList.add("hidden");
+                document.getElementById("trendEmptyState").classList.remove("hidden");
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: scoreTrend.labels,
+                    datasets: [{
+                        label: 'Class Score Average (%)',
+                        data: scoreTrend.data,
+                        borderColor: '#0d9488',
+                        tension: 0.2,
+                        fill: false
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function renderWeakTopics(weakTopics) {
+            const container = document.getElementById("weakTopicsContainer");
+
+            if (!weakTopics || weakTopics.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">No data yet — weak topics appear once students attempt quizzes.</p>';
+                return;
+            }
+
+            container.innerHTML = weakTopics.map(t => `
+                <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span>${t.topic}</span>
+                        <span class="text-red-600">${t.deficit}% Deficit</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-red-500 h-full" style="width:${t.deficit}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
     </script>
 </body>
 </html>
