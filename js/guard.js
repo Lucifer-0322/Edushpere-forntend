@@ -1,8 +1,6 @@
-
-
 (function executeSecurityShield() {
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("userRole");
+    const role  = localStorage.getItem("userRole");
 
     const currentPage = window.location.pathname.split("/").pop();
 
@@ -19,12 +17,12 @@
     }
 
     const teacherAccessPages = [
-    "04_Teacher-Dashboard.html",
-    "13_Create-Course.html",
-    "05_Quiz-Creator.html",
-    "06_upload-material.html",
-    "07_teacher-analytics.html"
-];
+        "04_Teacher-Dashboard.html",
+        "13_Create-Course.html",
+        "05_Quiz-Creator.html",
+        "06_upload-material.html",
+        "07_teacher-analytics.html"
+    ];
 
     const adminAccessPages = [
         "08_Admin-Dashboard.html"
@@ -35,7 +33,7 @@
         "09_Course.html"
     ];
 
-    // ✅ Shared pages — accessible by both STUDENT and TEACHER
+    // Shared pages — accessible by both STUDENT and TEACHER
     const sharedPages = [
         "10_Course-detail.html",
         "11_Quiz.html",
@@ -43,24 +41,21 @@
     ];
 
     if (teacherAccessPages.includes(currentPage) && role !== "TEACHER") {
-        console.warn(`Security Breach Intercepted: Access to ${currentPage} denied for role ${role}`);
         window.location.href = "unauthorized.html";
         return;
     }
 
     if (adminAccessPages.includes(currentPage) && role !== "ADMIN") {
-        console.warn(`Security Breach Intercepted: Access to ${currentPage} denied for role ${role}`);
         window.location.href = "unauthorized.html";
         return;
     }
 
     if (studentAccessPages.includes(currentPage) && role !== "STUDENT") {
-        console.warn(`Security Breach Intercepted: Access to ${currentPage} denied for role ${role}`);
         redirectUserToHome(role);
         return;
     }
 
-    // ✅ Shared pages: only block ADMIN from accessing them
+    // Shared pages: block ADMIN only
     if (sharedPages.includes(currentPage) && role === "ADMIN") {
         redirectUserToHome(role);
         return;
@@ -82,6 +77,5 @@ function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("userRole");
     localStorage.removeItem("userName");
-    console.log("Session token status revoked. Redirecting to sign-in panel.");
     window.location.href = "01_login.html";
-}       
+}
