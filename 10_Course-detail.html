@@ -1,119 +1,191 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>EduSphere AI - Learning Track</title>
-        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-        <script src="js/guard.js"></script>
-    </head>
-    <body class="bg-slate-50 text-slate-800">
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="border-b border-slate-200 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <a href="03_Student-Dashboard.html" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Workspace</a>
-                    <h1 class="text-3xl font-bold text-slate-900 mt-2" id="courseTitle">Loading...</h1>
-                    <p class="text-sm text-slate-500" id="courseInstructor">Loading instructor...</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduSphere AI - Learning Track</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="js/guard.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="border-b border-slate-200 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <a href="javascript:history.back()" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Workspace</a>
+                <h1 class="text-3xl font-bold text-slate-900 mt-2" id="courseTitle">Loading...</h1>
+                <p class="text-sm text-slate-500" id="courseInstructor">Loading instructor...</p>
+            </div>
+
+            <div id="teacherActions" class="hidden">
+                <button onclick="deleteCurrentCourse()" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold text-sm px-4 py-2 rounded-lg shadow-sm transition cursor-pointer">
+                    Delete Entire Course
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+                    <h2 class="text-lg font-bold mb-4">Course Core Syllabus Materials</h2>
+                    <div class="divide-y divide-slate-100" id="materialsContainer">
+                        <p class="text-sm text-slate-400 py-4">Loading materials...</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 space-y-6">
-                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
-                        <h2 class="text-lg font-bold mb-4">Course Core Syllabus Materials</h2>
-                        <div class="divide-y divide-slate-100" id="materialsContainer">
-                            <p class="text-sm text-slate-400 py-4">Loading materials...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs h-fit">
-                    <h2 class="text-lg font-bold mb-4">Available Quizzes</h2>
-                    <div class="space-y-3" id="quizzesContainer">
-                        <p class="text-sm text-slate-400">Loading quizzes...</p>
-                    </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs h-fit">
+                <h2 class="text-lg font-bold mb-4">Available Quizzes</h2>
+                <div class="space-y-3" id="quizzesContainer">
+                    <p class="text-sm text-slate-400">Loading quizzes...</p>
                 </div>
             </div>
-        </main>
+        </div>
+    </main>
 
-        <script>
-            const BASE = "https://edushpere-backend-production.up.railway.app";
-            const token = localStorage.getItem("token");
+    <script>
+        const BASE = "https://edushpere-backend-production.up.railway.app";
+        const token = localStorage.getItem("token");
+        const userRole = localStorage.getItem("userRole");
 
-            // Get course ID from URL — e.g. course-detail.html?id=xxx
-            const urlParams = new URLSearchParams(window.location.search);
-            const courseId = urlParams.get("id");
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get("id");
 
-            if (!courseId) {
-                window.location.href = "09_Course.html";
-            }
-
-            async function loadCourseDetail() {
-                try {
-                    const res = await fetch(`${BASE}/api/courses/${courseId}`, {
-                        headers: {
-                            "Authorization": "Bearer " + token
-                        }
-                    });
-
-                    const data = await res.json();
-
-                    if (!res.ok) {
-                        alert("Course not found.");
-                        window.location.href = "09_Course.html";
-                        return;
-                    }
-
-                    // Update course title and instructor
-                    document.getElementById("courseTitle").innerText = data.title;
-                    document.getElementById("courseInstructor").innerText =
-                        "Instructor: " + (data.teacher ? data.teacher.name : "Unknown");
-
-                    // Load materials
-                    const materialsContainer = document.getElementById("materialsContainer");
-                    if (data.materials && data.materials.length > 0) {
-                        materialsContainer.innerHTML = data.materials.map(m => `
-                            <div class="py-4 flex justify-between items-center first:pt-0 last:pb-0">
-                                <div class="flex items-center gap-3">
-                                    <div class="p-2 bg-red-50 text-red-600 rounded">📄</div>
-                                    <div>
-                                        <h4 class="font-semibold text-sm text-slate-800">${m.title}</h4>
-                                        <p class="text-xs text-slate-400">${m.fileType.toUpperCase()} &bull; Hosted on Cloudinary</p>
-                                    </div>
-                                </div>
-                                <a href="${m.fileUrl}" target="_blank" class="text-xs font-medium text-teal-600 hover:underline">Download</a>
-                            </div>
-                        `).join('');
-                    } else {
-                        materialsContainer.innerHTML = '<p class="text-sm text-slate-400 py-4">No materials uploaded yet.</p>';
-                    }
-
-                    // Load quizzes
-                    const quizzesContainer = document.getElementById("quizzesContainer");
-                    if (data.quizzes && data.quizzes.length > 0) {
-                        quizzesContainer.innerHTML = data.quizzes.map(q => `
-                            <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl flex flex-col gap-3">
-                                <div>
-                                    <h4 class="font-bold text-sm text-slate-800">${q.title}</h4>
-                                    <p class="text-xs text-slate-400">MCQ Format &bull; Auto Graded</p>
-                                </div>
-                                <a href="11_Quiz.html?id=${q.id}"
-                                class="w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2 rounded-lg transition block">
-                                Launch Assessment
-                                </a>
-                            </div>
-                        `).join('');
-                    } else {
-                        quizzesContainer.innerHTML = '<p class="text-sm text-slate-400">No quizzes available yet.</p>';
-                    }
-
-                } catch (err) {
-                    console.error("Error loading course:", err);
-                    document.getElementById("courseTitle").innerText = "Error loading course";
-                }
-            }
-
+        if (!courseId) {
+            window.location.href = userRole === "TEACHER" ? "04_Teacher-Dashboard.html" : "03_Student-Dashboard.html";
+        } else {
             loadCourseDetail();
-        </script>
-    </body>
-    </html>
+        }
+
+        async function loadCourseDetail() {
+            try {
+                const res = await fetch(`${BASE}/api/courses/${courseId}`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert("Course not found.");
+                    window.location.href = userRole === "TEACHER" ? "04_Teacher-Dashboard.html" : "03_Student-Dashboard.html";
+                    return;
+                }
+
+                document.getElementById("courseTitle").innerText = data.title;
+                document.getElementById("courseInstructor").innerText = "Instructor: " + (data.teacher ? data.teacher.name : "Unknown");
+
+                if (userRole === "TEACHER") {
+                    document.getElementById("teacherActions").classList.remove("hidden");
+                }
+
+                // Load materials
+                const materialsContainer = document.getElementById("materialsContainer");
+                if (data.materials && data.materials.length > 0) {
+                    materialsContainer.innerHTML = data.materials.map(m => `
+                        <div class="py-4 flex justify-between items-center first:pt-0 last:pb-0">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-red-50 text-red-600 rounded">📄</div>
+                                <div>
+                                    <h4 class="font-semibold text-sm text-slate-800">${m.title}</h4>
+                                    <p class="text-xs text-slate-400">${m.fileType.toUpperCase()} &bull; Hosted externally</p>
+                                </div>
+                            </div>
+                            <a href="${m.fileUrl}" target="_blank" class="text-xs font-medium text-teal-600 hover:underline">Download</a>
+                        </div>
+                    `).join('');
+                } else {
+                    materialsContainer.innerHTML = '<p class="text-sm text-slate-400 py-4">No materials uploaded yet.</p>';
+                }
+
+                // Load quizzes
+                const quizzesContainer = document.getElementById("quizzesContainer");
+                if (data.quizzes && data.quizzes.length > 0) {
+                    quizzesContainer.innerHTML = data.quizzes.map(q => {
+                        // Each quiz gets its own individual "Delete Quiz" button (teacher only)
+                        const deleteQuizBtn = userRole === "TEACHER" ? `
+                            <button onclick="deleteQuiz('${q.id}', '${q.title.replace(/'/g, "\\'")}')"
+                               class="w-full mt-2 text-center bg-red-50 border border-red-100 hover:bg-red-100 text-red-600 font-semibold text-xs py-2 rounded-lg transition block cursor-pointer">
+                                Delete Quiz
+                            </button>
+                        ` : '';
+
+                        return `
+                        <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl flex flex-col gap-2">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800">${q.title}</h4>
+                                <p class="text-xs text-slate-400">MCQ Format &bull; Auto Graded</p>
+                            </div>
+                            <a href="11_Quiz.html?id=${q.id}"
+                               class="w-full mt-1 text-center bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2 rounded-lg transition block">
+                                Launch Assessment
+                            </a>
+                            ${deleteQuizBtn}
+                        </div>
+                    `}).join('');
+                } else {
+                    quizzesContainer.innerHTML = '<p class="text-sm text-slate-400">No quizzes available yet.</p>';
+                }
+
+            } catch (err) {
+                console.error("Error loading course:", err);
+                document.getElementById("courseTitle").innerText = "Error loading course";
+            }
+        }
+
+        // Delete the ENTIRE course (and everything inside it)
+        async function deleteCurrentCourse() {
+            const courseTitle = document.getElementById("courseTitle").innerText;
+            const confirmed = confirm(`Are you sure you want to delete "${courseTitle}"?\n\nThis will permanently delete all quizzes, questions, and materials associated with this course.`);
+
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`${BASE}/api/courses/${courseId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert("Error: " + (data.error || "Failed to delete course."));
+                    return;
+                }
+
+                alert("Course deleted successfully.");
+                window.location.href = "04_Teacher-Dashboard.html";
+
+            } catch (err) {
+                console.error("Course Delete Error:", err);
+                alert("Cannot connect to server to delete course.");
+            }
+        }
+
+        // Delete a SINGLE quiz only (course and other quizzes stay intact)
+        async function deleteQuiz(quizId, quizTitle) {
+            const confirmed = confirm(`Are you sure you want to delete the quiz: "${quizTitle}"?\n\nThis will permanently delete all associated questions and student attempts for this quiz only.`);
+
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`${BASE}/api/quizzes/${quizId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert("Error: " + (data.error || "Failed to delete quiz."));
+                    return;
+                }
+
+                alert("Quiz deleted successfully.");
+                loadCourseDetail(); // Refresh list — only this quiz disappears
+            } catch (err) {
+                console.error("Quiz Delete Error:", err);
+                alert("Cannot connect to server to delete quiz.");
+            }
+        }
+    </script>
+</body>
+</html>
