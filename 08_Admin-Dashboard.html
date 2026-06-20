@@ -24,7 +24,7 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight">System Administration</h1>
             <p class="text-slate-500 text-sm mt-1">Manage platform users, instructors, and content data.</p>
@@ -70,6 +70,19 @@
 
     </main>
 
+    <!-- Quiz Management Modal -->
+    <div id="quizModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-900" id="quizModalTitle">Quizzes</h3>
+                <button onclick="closeQuizModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-3" id="quizModalBody">
+                <p class="text-sm text-slate-400">Loading quizzes...</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         const BASE = "https://edushpere-backend-production.up.railway.app";
         const token = localStorage.getItem("token");
@@ -83,7 +96,6 @@
 
         async function loadAllUsers() {
             try {
-                // Requires a GET /api/users route for Admins
                 const res = await fetch(`${BASE}/api/users`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
@@ -120,7 +132,6 @@
 
         async function loadAllCourses() {
             try {
-                // We can reuse the existing GET /api/courses route!
                 const res = await fetch(`${BASE}/api/courses`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
@@ -134,7 +145,9 @@
                         <td class="py-3 px-4 text-slate-600">${course.teacher?.name || 'Unknown'}</td>
                         <td class="py-3 px-4 text-slate-600">${course._count?.quizzes || 0} Quizzes</td>
                         <td class="py-3 px-4 text-right flex justify-end gap-2">
-                            <a href="10_Course-detail.html?id=${course.id}" class="text-teal-600 hover:text-teal-800 font-medium text-sm bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded transition">View Quizzes</a>
+                            <button onclick="openQuizModal('${course.id}', '${course.title.replace(/'/g, "\\'")}')" class="text-teal-600 hover:text-teal-800 font-medium text-sm bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded transition cursor-pointer">
+                                View Quizzes
+                            </button>
                             <button onclick="deleteCourse('${course.id}', '${course.title.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 font-medium text-sm bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition cursor-pointer">
                                 Delete Course
                             </button>
@@ -145,6 +158,73 @@
                 document.getElementById("coursesTableBody").innerHTML = coursesHtml || '<tr><td colspan="4" class="py-4 px-4 text-center">No courses found.</td></tr>';
             } catch (err) {
                 document.getElementById("coursesTableBody").innerHTML = `<tr><td colspan="4" class="text-red-500 py-4 px-4">Error loading courses: ${err.message}</td></tr>`;
+            }
+        }
+
+        // --- QUIZ MODAL --- //
+
+        let currentCourseId = null;
+
+        async function openQuizModal(courseId, courseTitle) {
+            currentCourseId = courseId;
+            document.getElementById("quizModalTitle").innerText = `Quizzes — ${courseTitle}`;
+            document.getElementById("quizModalBody").innerHTML = '<p class="text-sm text-slate-400">Loading quizzes...</p>';
+            document.getElementById("quizModal").classList.remove("hidden");
+
+            try {
+                const res = await fetch(`${BASE}/api/courses/${courseId}`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error);
+
+                if (!data.quizzes || data.quizzes.length === 0) {
+                    document.getElementById("quizModalBody").innerHTML = '<p class="text-sm text-slate-400">No quizzes in this course.</p>';
+                    return;
+                }
+
+                document.getElementById("quizModalBody").innerHTML = data.quizzes.map(q => `
+                    <div id="modal-quiz-row-${q.id}" class="flex justify-between items-center p-3 border border-slate-200 rounded-lg bg-slate-50">
+                        <div>
+                            <p class="font-semibold text-sm text-slate-800">${q.title}</p>
+                            <p class="text-xs text-slate-400">${q.topic || ''}</p>
+                        </div>
+                        <button onclick="deleteQuizFromModal('${q.id}')" class="text-red-600 hover:text-red-800 font-medium text-xs bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded transition cursor-pointer">
+                            Delete Quiz
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                document.getElementById("quizModalBody").innerHTML = `<p class="text-sm text-red-500">Error loading quizzes: ${err.message}</p>`;
+            }
+        }
+
+        function closeQuizModal() {
+            document.getElementById("quizModal").classList.add("hidden");
+            currentCourseId = null;
+        }
+
+        async function deleteQuizFromModal(quizId) {
+            if (!confirm("Delete this quiz? This will remove all student attempts for it too.")) return;
+
+            try {
+                const res = await fetch(`${BASE}/api/quizzes/${quizId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "Failed to delete quiz.");
+
+                document.getElementById(`modal-quiz-row-${quizId}`).remove();
+
+                // Refresh the course list quiz count in the background
+                loadAllCourses();
+
+            } catch (err) {
+                alert("Error: " + err.message);
             }
         }
 
