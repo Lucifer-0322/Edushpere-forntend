@@ -29,12 +29,17 @@
                 <input type="text" id="courseTitle" required
                     class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                     placeholder="e.g., App Development Fundamentals">
+                <button type="button" onclick="generateDescription()" id="generateDescBtn"
+                    class="mt-2 text-xs font-semibold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded transition cursor-pointer">
+                    ✨ Generate Description with AI
+                </button>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700">Course Description</label>
                 <textarea id="courseDescription" required rows="4"
                     class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm"
                     placeholder="What will students learn in this course?"></textarea>
+                <p id="aiDescStatus" class="hidden text-xs text-slate-400 mt-1"></p>
             </div>
 
             <button type="submit" id="submitBtn"
@@ -47,6 +52,52 @@
     <script>
         const BASE = "https://edushpere-backend-production.up.railway.app";
         const token = localStorage.getItem("token");
+
+        async function generateDescription() {
+            const titleField = document.getElementById("courseTitle");
+            const title = titleField.value.trim();
+
+            if (!title) {
+                titleField.focus();
+                alert("Please enter a course title first.");
+                return;
+            }
+
+            const btn = document.getElementById("generateDescBtn");
+            const status = document.getElementById("aiDescStatus");
+
+            btn.disabled = true;
+            status.classList.remove("hidden");
+            status.className = "text-xs text-teal-600 mt-1";
+            status.innerText = "✨ Gemini is writing your description...";
+
+            try {
+                const res = await fetch(`${BASE}/api/ai/generate-description`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ title })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || "Failed to generate description.");
+                }
+
+                document.getElementById("courseDescription").value = data.description;
+                status.className = "text-xs text-green-600 mt-1";
+                status.innerText = "✅ Description generated — feel free to edit it before publishing.";
+
+            } catch (err) {
+                status.className = "text-xs text-red-500 mt-1";
+                status.innerText = "❌ " + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
 
         document.getElementById("createCourseForm").addEventListener("submit", async (e) => {
             e.preventDefault();

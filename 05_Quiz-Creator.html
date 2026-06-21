@@ -50,6 +50,36 @@
                 </div>
             </div>
 
+            <!-- AI Quiz Generator -->
+            <div class="bg-teal-50/30 p-6 rounded-xl border border-teal-200 shadow-xs space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">✨</span>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">AI Quiz Generator (optional)</span>
+                </div>
+                <p class="text-xs text-teal-700">Skip manual entry below — generate several questions from the topic above using Gemini, review them, then publish.</p>
+
+                <div class="flex items-end gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-slate-600">Number of Questions</label>
+                        <input type="number" id="aiQuestionCount" min="1" max="10" value="5"
+                            class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                    </div>
+                    <button type="button" onclick="generateQuestionsWithAI()" id="aiGenerateBtn"
+                        class="text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg transition cursor-pointer disabled:opacity-50">
+                        Generate Questions
+                    </button>
+                </div>
+
+                <p id="aiQuizStatus" class="hidden text-xs"></p>
+
+                <div id="aiQuestionsContainer" class="space-y-4"></div>
+
+                <button type="button" onclick="publishAiQuiz()" id="publishAiBtn"
+                    class="hidden w-full bg-teal-700 hover:bg-teal-800 text-white font-bold py-3 rounded-xl transition cursor-pointer shadow-xs disabled:opacity-50">
+                    Publish These AI Questions to Classroom
+                </button>
+            </div>
+
             <!-- Question -->
             <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
                 <span class="text-xs font-bold text-teal-600 uppercase tracking-wider">Question Configuration</span>
@@ -147,6 +177,173 @@
         // tampers with the dropdown value or it's somehow stale.
         function isOwnCourse(courseId) {
             return myCourses.some(c => String(c.id) === String(courseId));
+        }
+
+        // ============================================
+        // AI Quiz Generator
+        // ============================================
+        let aiQuestions = [];
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.innerText = str || "";
+            return div.innerHTML;
+        }
+
+        async function generateQuestionsWithAI() {
+            const topic = document.getElementById("quizTopic").value.trim();
+            const courseId = document.getElementById("courseId").value;
+            const count = parseInt(document.getElementById("aiQuestionCount").value, 10) || 5;
+
+            if (!topic) {
+                alert("Enter a topic in the Quiz Info section first.");
+                return;
+            }
+            if (!isOwnCourse(courseId)) {
+                alert("Select one of your own courses first.");
+                return;
+            }
+
+            const btn = document.getElementById("aiGenerateBtn");
+            const status = document.getElementById("aiQuizStatus");
+            const container = document.getElementById("aiQuestionsContainer");
+            const publishBtn = document.getElementById("publishAiBtn");
+
+            btn.disabled = true;
+            publishBtn.classList.add("hidden");
+            status.classList.remove("hidden");
+            status.className = "text-xs text-teal-700";
+            status.innerText = "✨ Gemini is generating your questions...";
+            container.innerHTML = "";
+
+            try {
+                const res = await fetch(`${BASE}/api/ai/generate-quiz`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ topic, count })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed to generate questions.");
+
+                aiQuestions = data.questions;
+                renderAiQuestions();
+
+                status.className = "text-xs text-green-600";
+                status.innerText = `✅ ${aiQuestions.length} questions generated. Review and edit below, then publish.`;
+                publishBtn.classList.remove("hidden");
+
+            } catch (err) {
+                status.className = "text-xs text-red-500";
+                status.innerText = "❌ " + err.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function renderAiQuestions() {
+            const container = document.getElementById("aiQuestionsContainer");
+
+            container.innerHTML = aiQuestions.map((q, i) => `
+                <div class="bg-white p-4 rounded-lg border border-slate-200 space-y-2">
+                    <div class="flex justify-between items-start gap-2">
+                        <textarea oninput="aiQuestions[${i}].questionText = this.value" rows="2"
+                            class="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm">${escapeHtml(q.questionText)}</textarea>
+                        <button type="button" onclick="removeAiQuestion(${i})"
+                            class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 cursor-pointer">Remove</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input oninput="aiQuestions[${i}].optionA = this.value" value="${escapeHtml(q.optionA)}"
+                            class="px-3 py-2 border border-slate-300 rounded-md text-xs" placeholder="Option A">
+                        <input oninput="aiQuestions[${i}].optionB = this.value" value="${escapeHtml(q.optionB)}"
+                            class="px-3 py-2 border border-slate-300 rounded-md text-xs" placeholder="Option B">
+                        <input oninput="aiQuestions[${i}].optionC = this.value" value="${escapeHtml(q.optionC)}"
+                            class="px-3 py-2 border border-slate-300 rounded-md text-xs" placeholder="Option C">
+                        <input oninput="aiQuestions[${i}].optionD = this.value" value="${escapeHtml(q.optionD)}"
+                            class="px-3 py-2 border border-slate-300 rounded-md text-xs" placeholder="Option D">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-slate-500">Correct Answer:</label>
+                        <select onchange="aiQuestions[${i}].correctOption = this.value"
+                            class="px-2 py-1 border border-slate-300 rounded-md text-xs bg-white">
+                            ${["A", "B", "C", "D"].map(opt =>
+                                `<option value="${opt}" ${q.correctOption === opt ? "selected" : ""}>${opt}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeAiQuestion(index) {
+            aiQuestions.splice(index, 1);
+            renderAiQuestions();
+            if (aiQuestions.length === 0) {
+                document.getElementById("publishAiBtn").classList.add("hidden");
+            }
+        }
+
+        async function publishAiQuiz() {
+            const errorAlert = document.getElementById("errorAlert");
+            const errorMessage = document.getElementById("errorMessage");
+            const successAlert = document.getElementById("successAlert");
+            const publishBtn = document.getElementById("publishAiBtn");
+
+            errorAlert.classList.add("hidden");
+            successAlert.classList.add("hidden");
+
+            const title = document.getElementById("quizTitle").value.trim();
+            const topic = document.getElementById("quizTopic").value.trim();
+            const courseId = document.getElementById("courseId").value;
+
+            if (!title) {
+                errorMessage.innerText = "Enter a quiz title in the Quiz Info section first.";
+                errorAlert.classList.remove("hidden");
+                return;
+            }
+            if (!isOwnCourse(courseId)) {
+                errorMessage.innerText = "You can only publish quizzes to your own courses.";
+                errorAlert.classList.remove("hidden");
+                return;
+            }
+            if (aiQuestions.length === 0) {
+                errorMessage.innerText = "No AI-generated questions to publish.";
+                errorAlert.classList.remove("hidden");
+                return;
+            }
+
+            publishBtn.disabled = true;
+            publishBtn.innerText = "Publishing...";
+
+            const payload = { title, topic, courseId, questions: aiQuestions };
+
+            try {
+                const res = await fetch(`${BASE}/api/quizzes`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed to publish quiz.");
+
+                successAlert.classList.remove("hidden");
+                setTimeout(() => {
+                    window.location.href = "04_Teacher-Dashboard.html";
+                }, 2000);
+
+            } catch (err) {
+                errorMessage.innerText = err.message;
+                errorAlert.classList.remove("hidden");
+                publishBtn.disabled = false;
+                publishBtn.innerText = "Publish These AI Questions to Classroom";
+            }
         }
 
         // Submit quiz to backend

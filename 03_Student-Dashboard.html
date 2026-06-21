@@ -93,6 +93,12 @@
                 <div class="space-y-3" id="aiRecommendationsPanel">
                     <p class="text-xs text-slate-400">No recommendations yet. Complete a quiz to get personalized study tips.</p>
                 </div>
+
+                <button onclick="getPerformanceReport()" id="reportBtn"
+                    class="w-full mt-4 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-lg transition cursor-pointer disabled:opacity-50">
+                    ✨ Generate My AI Report Card
+                </button>
+                <div id="reportPanel" class="hidden mt-4 space-y-3"></div>
             </div>
         </div>
     </main>
@@ -196,6 +202,60 @@
 
             } catch (err) {
                 console.error("Error loading AI insights:", err);
+            }
+        }
+
+        async function getPerformanceReport() {
+            const btn = document.getElementById("reportBtn");
+            const panel = document.getElementById("reportPanel");
+
+            btn.disabled = true;
+            panel.classList.remove("hidden");
+            panel.innerHTML = '<p class="text-xs text-teal-700">✨ Gemini is analyzing your performance...</p>';
+
+            try {
+                const res = await fetch(`${BASE}/api/ai/my-report`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || "Failed to generate report.");
+
+                if (!data.report) {
+                    panel.innerHTML = `<p class="text-xs text-slate-400">${data.message}</p>`;
+                    return;
+                }
+
+                const r = data.report;
+                panel.innerHTML = `
+                    <div class="bg-white p-4 rounded-xl border border-teal-100">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl font-black text-teal-600">${r.overallGrade}</span>
+                            <span class="text-xs text-slate-500">Overall Grade • ${data.overallAverage}% avg • ${data.totalAttempts} quizzes</span>
+                        </div>
+                        ${r.strengths.length ? `
+                        <div class="mb-2">
+                            <p class="text-xs font-bold text-green-600 uppercase mb-1">✅ Strengths</p>
+                            <p class="text-xs text-slate-600">${r.strengths.join(", ")}</p>
+                        </div>` : ''}
+                        ${r.weakAreas.length ? `
+                        <div class="mb-2">
+                            <p class="text-xs font-bold text-red-500 uppercase mb-1">⚠️ Weak Areas</p>
+                            <p class="text-xs text-slate-600">${r.weakAreas.join(", ")}</p>
+                        </div>` : ''}
+                        ${r.studyPlan.length ? `
+                        <div class="mb-2">
+                            <p class="text-xs font-bold text-blue-600 uppercase mb-1">📚 Study Plan</p>
+                            ${r.studyPlan.map(s => `<p class="text-xs text-slate-600">• ${s}</p>`).join('')}
+                        </div>` : ''}
+                        ${r.motivationalMessage ? `
+                        <p class="text-xs text-teal-700 italic mt-2 border-t border-teal-50 pt-2">"${r.motivationalMessage}"</p>` : ''}
+                    </div>
+                `;
+            } catch (err) {
+                panel.innerHTML = `<p class="text-xs text-red-500">Error: ${err.message}</p>`;
+            } finally {
+                btn.disabled = false;
             }
         }
     </script>
