@@ -10,18 +10,47 @@
 </head>
 <body class="bg-slate-50 text-slate-800">
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="mb-8">
+
+        <div class="mb-6">
             <a href="04_Teacher-Dashboard.html" class="text-xs font-semibold text-teal-600 hover:underline">&larr; Back to Control Center</a>
             <h1 class="text-3xl font-bold text-slate-900 mt-2">Class Performance Diagnostics</h1>
-            <p class="text-slate-500 text-sm">Review automated pass metrics and student knowledge gap breakdowns flagged by the Gemini API.</p>
+            <p class="text-slate-500 text-sm">Review quiz score trends and student knowledge gap breakdowns.</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Course Filter Dropdown -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs mb-6 flex items-center gap-4">
+            <label class="text-sm font-medium text-slate-700 whitespace-nowrap">Filter by Course:</label>
+            <select id="courseFilter" onchange="loadAnalytics()"
+                class="flex-1 max-w-sm px-3 py-2 border border-slate-300 rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <option value="all">All My Courses (Combined)</option>
+            </select>
+            <span id="courseLabel" class="text-xs text-slate-400"></span>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Quizzes</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statQuizzes">—</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Attempts</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statAttempts">—</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+                <p class="text-xs font-medium text-slate-500 uppercase tracking-wide">Weak Topics Found</p>
+                <h3 class="text-2xl font-bold text-slate-900 mt-1" id="statWeakTopics">—</h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wide mb-4">Quiz Score Distribution Trends</h3>
-                <div class="h-64 flex items-center justify-center relative">
+                <div class="h-64 relative">
                     <canvas id="analyticsGraphCanvas"></canvas>
-                    <p id="trendEmptyState" class="hidden text-sm text-slate-400 absolute">No quiz attempts yet — the trend will appear once students start submitting.</p>
+                    <p id="trendEmptyState" class="hidden text-sm text-slate-400 absolute inset-0 flex items-center justify-center">
+                        No quiz attempts yet.
+                    </p>
                 </div>
             </div>
 
@@ -32,28 +61,66 @@
                 </div>
             </div>
         </div>
+
     </main>
 
     <script>
         const BASE = "https://edushpere-backend-production.up.railway.app";
         const token = localStorage.getItem("token");
-
         let chartInstance = null;
 
-        document.addEventListener("DOMContentLoaded", loadAnalytics);
+        document.addEventListener("DOMContentLoaded", async () => {
+            await loadCourseDropdown();
+            loadAnalytics();
+        });
 
-        async function loadAnalytics() {
+        async function loadCourseDropdown() {
             try {
-                const res = await fetch(`${BASE}/api/analytics/teacher`, {
+                const res = await fetch(`${BASE}/api/courses/my-courses`, {
                     headers: { "Authorization": "Bearer " + token }
                 });
+                const courses = await res.json();
+                if (!Array.isArray(courses)) return;
 
+                const select = document.getElementById("courseFilter");
+                courses.forEach(c => {
+                    const opt = document.createElement("option");
+                    opt.value = c.id;
+                    opt.textContent = c.title;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Dropdown load error:", err);
+            }
+        }
+
+        async function loadAnalytics() {
+            const courseId = document.getElementById("courseFilter").value;
+            const url = courseId === "all"
+                ? `${BASE}/api/analytics/teacher`
+                : `${BASE}/api/analytics/course/${courseId}`;
+
+            try {
+                const res = await fetch(url, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
                 const data = await res.json();
 
                 if (!res.ok) {
                     document.getElementById("weakTopicsContainer").innerHTML =
                         `<p class="text-sm text-red-500">${data.error || "Failed to load analytics."}</p>`;
                     return;
+                }
+
+                // Update stats
+                document.getElementById("statQuizzes").innerText = data.totalQuizzes ?? "—";
+                document.getElementById("statAttempts").innerText = data.totalAttempts ?? "—";
+                document.getElementById("statWeakTopics").innerText = data.weakTopics?.length ?? "—";
+
+                if (data.courseName) {
+                    document.getElementById("courseLabel").innerText = `Showing: ${data.courseName}`;
+                } else {
+                    document.getElementById("courseLabel").innerText = "Showing: All Courses";
                 }
 
                 renderTrendChart(data.scoreTrend);
@@ -68,12 +135,22 @@
 
         function renderTrendChart(scoreTrend) {
             const canvas = document.getElementById('analyticsGraphCanvas');
+            const emptyState = document.getElementById("trendEmptyState");
+
+            // Destroy previous chart if exists
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
 
             if (!scoreTrend || scoreTrend.labels.length === 0) {
                 canvas.classList.add("hidden");
-                document.getElementById("trendEmptyState").classList.remove("hidden");
+                emptyState.classList.remove("hidden");
                 return;
             }
+
+            canvas.classList.remove("hidden");
+            emptyState.classList.add("hidden");
 
             const ctx = canvas.getContext('2d');
             chartInstance = new Chart(ctx, {
@@ -84,11 +161,20 @@
                         label: 'Class Score Average (%)',
                         data: scoreTrend.data,
                         borderColor: '#0d9488',
-                        tension: 0.2,
-                        fill: false
+                        backgroundColor: 'rgba(13, 148, 136, 0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#0d9488'
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+                    }
+                }
             });
         }
 
@@ -96,19 +182,20 @@
             const container = document.getElementById("weakTopicsContainer");
 
             if (!weakTopics || weakTopics.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400">No data yet — weak topics appear once students attempt quizzes.</p>';
+                container.innerHTML = '<p class="text-sm text-slate-400">No weak topics detected yet.</p>';
                 return;
             }
 
             container.innerHTML = weakTopics.map(t => `
                 <div>
                     <div class="flex justify-between text-xs font-semibold mb-1">
-                        <span>${t.topic}</span>
+                        <span class="text-slate-700">${t.topic}</span>
                         <span class="text-red-600">${t.deficit}% Deficit</span>
                     </div>
                     <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div class="bg-red-500 h-full" style="width:${t.deficit}%"></div>
+                        <div class="bg-red-500 h-full rounded-full" style="width:${Math.min(t.deficit, 100)}%"></div>
                     </div>
+                    <p class="text-xs text-slate-400 mt-1">${t.attempts} attempt(s)</p>
                 </div>
             `).join('');
         }
